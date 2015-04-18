@@ -19,21 +19,21 @@ cd('..');
 
 
 %Patch match parameters
-NIters = 5;
+NIters = 3;
 K = 3;
-Alpha = 0.5;
+Alpha = 0.3;
 
 %Self-Similarity parameters
 dim = 200;
 BeatsPerWin = 8;
 
 
-% beatIdx1 = 2;
-% beatIdx2 = 2;
-% doSingleExperiment;
+beatIdx1 = 2;
+beatIdx2 = 2;
+doSingleExperiment;
 
-for beatIdx1 = 1:3
-    for beatIdx2 = 1:3
-        doSingleExperiment;
-    end
-end
+% for beatIdx1 = 1:3
+%     for beatIdx2 = 1:3
+%         doSingleExperiment;
+%     end
+% end

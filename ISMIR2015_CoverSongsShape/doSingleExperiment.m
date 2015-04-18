@@ -7,6 +7,11 @@ addpath('PatchMatch');
 addpath('SequenceAlignment');
 addpath('SimilarityMatrices');
 
+%Make directory to hold the results if it doesn't exist
+dirName = sprintf('Results_%i_%i_%i_%i_%g', dim, BeatsPerWin, NIters, K, Alpha);
+if ~exist(dirName);
+    mkdir(dirName);
+end
 
 %Initialize parameters for matching
 list1 = 'coversongs/covers32k/list1.list';
@@ -18,11 +23,12 @@ N = length(files1);
 
 %Run all cross-similarity experiments between songs and covers
 fprintf(1, '\n\n\n');
-disp('=====================================');
-fprintf(1, 'Running experiments for beatIdx1 = %i, beatIdx2 = %i\n', beatIdx1, beatIdx2);
+disp('======================================================');
+fprintf(1, 'RUNNING EXPERIMENTS\n');
 fprintf(1, 'Patch Match NIters = %i, K = %i, Alpha = %g\n', NIters, K, Alpha);
 fprintf(1, 'dim = %i, BeatsPerWin = %i\n', dim, BeatsPerWin);
-disp('=====================================');
+fprintf(1, 'beatIdx1 = %i, beatIdx2 = %i\n', beatIdx1, beatIdx2);
+disp('======================================================');
 fprintf(1, '\n\n\n');
 
 DsOrig = cell(1, N);
@@ -73,21 +79,24 @@ for jj = 1:N
         allScoresChroma = zeros(1, size(ChromaY, 2));
         allScoresCombined = zeros(1, size(ChromaY, 2));
         for oti = 0:size(ChromaY, 2) - 1
+            thisY = getBeatSyncChromaDelay(ChromaY, BeatsPerWin, 0);
             %Full oti comparison matrix
-            Comp = zeros(size(ChromaX, 1), size(ChromaY, 1), size(ChromaY, 2));
+            Comp = zeros(size(ChromaX, 1), size(thisY, 1), size(ChromaX, 2));
             %Do OTI on each element individually
             for cc = 0:size(ChromaY, 2)-1
                 thisY = getBeatSyncChromaDelay(ChromaY, BeatsPerWin, oti + cc);
-                Comp(:, :, cc+1) = ChromaX*ChromaY'; %Cosine distance
+                Comp(:, :, cc+1) = ChromaX*thisY'; %Cosine distance
             end
             [~, Comp] = max(Comp, [], 3);
             CSMChroma = (Comp == 1);
             allScoresChroma(oti+1) = sqrt(prod(size(CSMChroma)))/swalignimp(double(CSMChroma));
-            M = double(CSMChroma) + MMFCC;
+            dims = [size(CSMChroma); size(MMFCC)];
+            dims = min(dims, [], 1);
+            M = double(CSMChroma(1:dims(1), 1:dims(2)) + MMFCC(1:dims(1), 1:dims(2)) );
             M = double(M > 0);
             allScoresCombined(oti+1) = sqrt(prod(size(M)))/swalignimp(M);
         end
-        [ChromaScore, idx] = min(allChromaScores);
+        [ChromaScore, idx] = min(allScoresChroma);
         ScoresChroma(ii, jj) = ChromaScore;
         MinTransp(ii, jj) = idx;
         [Score, idx] = min(allScoresCombined);
@@ -98,5 +107,5 @@ for jj = 1:N
     AllMsMFCC(:, jj) = thisMsMFCC;
 end
 
-save(sprintf('Results%i_%i_%i.mat', BeatsPerWin, beatIdx1, beatIdx2), ...
+save(sprintf('%s/%i_%i.mat', dirName, beatIdx1, beatIdx2), ...
     'AllMsMFCC', 'ScoresChroma', 'ScoresMFCC', 'Scores', 'MinTransp', 'MinTranspCombined');
