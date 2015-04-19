@@ -5,6 +5,7 @@
 addpath('BeatSyncFeatures');
 addpath('SequenceAlignment');
 addpath('SimilarityMatrices');
+addpath('PatchMatch');
 
 %Make directory to hold the results if it doesn't exist
 dirName = sprintf('Results_%i_%i_%g', dim, BeatsPerWin, Kappa);
