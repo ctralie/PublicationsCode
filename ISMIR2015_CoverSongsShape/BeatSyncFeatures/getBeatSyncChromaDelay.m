@@ -3,7 +3,7 @@ function [ X ] = getBeatSyncChromaDelay( C, M, rotate )
         rotate = 0;
     end
     if rotate > 0
-        C = circshift(C, rotate, 2);
+        C = circshift(C', rotate)';
     end
     NChroma = size(C, 2);
     N = size(C, 1) - M + 1;
