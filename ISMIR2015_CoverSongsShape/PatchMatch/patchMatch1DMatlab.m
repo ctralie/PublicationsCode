@@ -3,32 +3,52 @@
 %NIters: Number of iterations (not many are needed before convergence)
 %K: Number of nearest neighbors to consider in the nearest neighbor field
 %(for reshaping purposes) and returns a distance
-function [ NNF, Queries ] = patchMatch1DMatlab( Ds1, Ds2, NNFunction, NIters, K, Alpha )
-    addpath('..');
+function [ NNF, Queries ] = patchMatch1DMatlab( MFCCsX, SampleDelaysX, bts1, ...
+                                                MFCCsY, SampleDelaysY, bts2, BeatsPerWin, NIters, K, Alpha )
+    addpath('../SimilarityMatrices');
     SwitchOddEven = 0;
-    Queries = 0;
         
-    N = size(Ds1, 1);
-    M = size(Ds2, 1);
+    N = size(MFCCsX, 1);
+    M = size(MFCCsY, 1);
+    
+    beatIdx1 = zeros(1, length(bts1));
+    idx = 1;
+    for ii = 1:N
+        while(SampleDelaysX(idx) < bts(ii))
+            idx = idx + 1;
+        end
+        beatIdx1(ii) = idx;
+    end
+    beatIdx2 = zeros(1, length(bts2));
+    idx = 1;
+    for ii = 1:M
+        while(SampleDelaysY(idx) < bts2(ii))
+            idx = idx + 1;
+        end
+        beatIdx2(ii) = idx;
+    end        
+    
     
     Queried = zeros(N, M);%Keep track of distances that are already queried
     %so that no work is redone (TODO: Make this sparse?)
-    queries = 0;
     
     %Randomly initialize nearest neighbor field
     NNF = randi(M, N, K);
-    %Bias towards the diagonal
-%     NNF = repmat((1:M)', [1 K]);
     DNNF = zeros(N, K);
-    for ii = 1:N
-        if N > 1000 && mod(ii, 1000) == 0
-            fprintf(1, '.');
-        end
+    parfor ii = 1:N
+        fprintf(1, '.');
+        D1 = getBeatSyncSSM(MFCCsX, SampleDelaysX, beatIdx1, BeatsPerWin, ii);
         for kk = 1:K
-            DNNF(ii, kk) = NNFunction(Ds1(ii, :), Ds2(NNF(ii, kk), :), dim);
-            %Queried(ii, NNF(ii, kk)) = 1;
+            D2 = getBeatSyncSSM(MFCCsY, SampleDelaysY, beatIdx2, BeatsPerWin, NNF(ii, kk));
+            DNNF(ii, kk) = sqrt(sum( (D1(:)-D2(:)).^2 ));
         end
     end
+    for ii = 1:N
+        for kk = 1:K
+            Queried(ii, NNF(ii, kk)) = 1;
+        end
+    end
+    
     for iter = 1:NIters
         fprintf(1, 'iter = %i\n', iter);
         for ii = 1:N
@@ -42,6 +62,7 @@ function [ NNF, Queries ] = patchMatch1DMatlab( Ds1, Ds2, NNFunction, NIters, K,
                 idx = N - ii + 1;
                 di = 1;
             end
+            D1 = getBeatSyncSSM(MFCCsX, SampleDelaysX, beatIdx1, BeatsPerWin, idx);
             if ii > 1
                 indices = [NNF(ii, :) zeros(1, K)];
                 dists = [DNNF(ii, :) inf*ones(1, K)];
@@ -54,9 +75,9 @@ function [ NNF, Queries ] = patchMatch1DMatlab( Ds1, Ds2, NNFunction, NIters, K,
                         continue;
                     end
                     Queried(ii, otherM) = 1;
-                    Queries = Queries + 1;
                     indices(K+kk) = otherM;
-                    dists(K+kk) = NNFunction(Ds1(idx, :), Ds2(otherM, :));
+                    D2 = getBeatSyncSSM(MFCCsY, SampleDelaysY, beatIdx2, BeatsPerWin, otherM);
+                    dists(K+kk) = sqrt(sum( (D1(:)-D2(:)).^2 ));
                 end
                 %Pick the top K neighbors out of the K old ones and 
                 %the K new ones
@@ -81,9 +102,10 @@ function [ NNF, Queries ] = patchMatch1DMatlab( Ds1, Ds2, NNFunction, NIters, K,
                         continue;
                     end
                     Queried(ii, otherM) = 1;
-                    Queries = Queries + 1;
                     indices(K+(rr-1)*K+kk) = otherM;
-                    dists(K+(rr-1)*K+kk) = NNFunction(Ds1(idx, :), Ds2(otherM, :));
+                    D2 = getBeatSyncSSM(MFCCsY, SampleDelaysY, beatIdx2, BeatsPerWin, otherM);
+                    dists(K+kk) = sqrt(sum( (D1(:)-D2(:)).^2 ));
+                    dists(K+(rr-1)*K+kk) = sqrt(sum( (D1(:)-D2(:)).^2 ));
                 end
             end
             %Pick the top K neighbors out of the K old ones and 
@@ -94,4 +116,5 @@ function [ NNF, Queries ] = patchMatch1DMatlab( Ds1, Ds2, NNFunction, NIters, K,
             DNNF(ii, :) = dists(1:K);
         end
     end
+    Queries = sum(Queried(:));
 end

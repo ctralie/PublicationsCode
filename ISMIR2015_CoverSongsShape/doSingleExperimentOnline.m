@@ -31,16 +31,12 @@ fprintf(1, 'beatIdx1 = %i, beatIdx2 = %i\n', beatIdx1, beatIdx2);
 disp('======================================================');
 fprintf(1, '\n\n\n');
 
-DsOrig = cell(1, N);
 ChromasOrig = cell(1, N);
-disp('Precomputing self-similarity matrices for original songs...');
+disp('Loading chroma for original songs...');
 for ii = 1:N
     tic;
-    song = load(['BeatSyncFeatures', filesep, files1{ii}, '.mat']);
-    fprintf(1, 'Getting self-similarity matrices for %s\n', files1{ii});
-    DsOrig{ii} = single(getBeatSyncDistanceMatrices(song.allMFCC{beatIdx1}, ...
-        song.allSampleDelaysMFCC{beatIdx1}, song.allbts{beatIdx1}, dim, BeatsPerWin));
-    ChromasOrig{ii} = song.allBeatSyncChroma{beatIdx1};
+    A = load(['BeatSyncFeatures', filesep, files1{ii}, '.mat'], 'allBeatSyncChroma');
+    ChromasOrig{ii} = A.allBeatSyncChroma{beatIdx1};
     toc;
 end
 
@@ -55,24 +51,24 @@ MinTranspCombined = zeros(N, N);
 %Now loop through the cover songs
 for jj = 1:N
     fprintf(1, 'Comparing cover song %i of %i\n', jj, N);
-    tic
-    song = load(['BeatSyncFeatures', filesep, files2{jj}, '.mat']);
+    song = load(['BeatSyncFeatures', filesep, files2{jj}, '.mat'], 'allBeatSyncChroma', 'allMFCC', 'allSampleDelaysMFCC', 'allbts');
     fprintf(1, 'Getting self-similarity matrices for %s\n', files2{jj});
-    thisDs = single(getBeatSyncDistanceMatrices(song.allMFCC{beatIdx2}, ...
-        song.allSampleDelaysMFCC{beatIdx2}, song.allbts{beatIdx2}, dim, BeatsPerWin));
     ChromaY = song.allBeatSyncChroma{beatIdx2};
-
+    MFCCsY = song.allMFCC{beatIdx2};
+    SampleDelaysY = song.allSampleDelaysMFCC{beatIdx2};
+    bts2 = song.allbts{beatIdx2};
+    
     thisMsMFCC = cell(N, 1);
     for ii = 1:N
-        %Step 1: Compute MFCC Self-Similarity features
-        %Precompute L2 cross-similarity matrix
-        CSM = bsxfun(@plus, dot(DsOrig{ii}, DsOrig{ii}, 2), dot(thisDs, thisDs, 2)') - 2*(DsOrig{ii}*thisDs');
-        CSM = sqrt(CSM);
-        %Do patch match
-%         MMFCC = patchMatch1DIMPMatlab( CSM, NIters, K, Alpha );
-        MMFCC = groundTruthKNN( CSM, round(size(CSM, 2)*0.1) );
-        MMFCC = MMFCC.*groundTruthKNN( CSM', round(size(CSM', 2)*0.1) )';
-%         thisMsMFCC{ii} = sparse(MMFCC);
+        song = load(['BeatSyncFeatures', filesep, files1{ii}, '.mat'], 'allBeatSyncChroma', 'allMFCC', 'allSampleDelaysMFCC');
+        MFCCsX = song.allMFCC{beatIdx1};
+        SampleDelaysX = song.allSampleDelaysMFCC{beatIdx1};
+        %Step 1: Do patch match, computing self-similarity matrices on
+        %demand
+        tic;
+        MMFCC = patchMatch1DMatlab( MFCCsX, SampleDelaysX, MFCCsY, SampleDelaysY, NIters, K, Alpha );
+        toc;
+        thisMsMFCC{ii} = sparse(MMFCC);
         ScoresMFCC(ii, jj) = sqrt(prod(size(MMFCC)))/swalignimp(double(full(MMFCC)));
         
         %Step 2: Compute transposed chroma delay features
