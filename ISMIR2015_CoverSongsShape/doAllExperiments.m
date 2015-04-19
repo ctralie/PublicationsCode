@@ -19,6 +19,7 @@ cd('..');
 
 %Self-Similarity parameters
 BeatsPerWin = 12;
+dim = 200;
 
 Kappa = 0.1;
 
