@@ -69,9 +69,10 @@ for jj = 1:N
         CSM = bsxfun(@plus, dot(DsOrig{ii}, DsOrig{ii}, 2), dot(thisDs, thisDs, 2)') - 2*(DsOrig{ii}*thisDs');
         CSM = sqrt(CSM);
         %Do patch match
+%         MMFCC = patchMatch1DIMPMatlab( CSM, NIters, K, Alpha );
         MMFCC = groundTruthKNN( CSM, round(size(CSM, 2)*0.1) );
         MMFCC = MMFCC.*groundTruthKNN( CSM', round(size(CSM', 2)*0.1) )';
-        thisMsMFCC{ii} = sparse(MMFCC);
+%         thisMsMFCC{ii} = sparse(MMFCC);
         ScoresMFCC(ii, jj) = sqrt(prod(size(MMFCC)))/swalignimp(double(full(MMFCC)));
         
         %Step 2: Compute transposed chroma delay features
