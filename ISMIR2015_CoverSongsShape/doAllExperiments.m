@@ -17,23 +17,11 @@ cd('BeatSyncFeatures');
 getAllTempoEmbeddings;
 cd('..');
 
-
-%Patch match parameters
-NIters = 3;
-K = 3;
-Alpha = 0.3;
-
 %Self-Similarity parameters
-dim = 200;
-BeatsPerWin = 8;
+BeatsPerWin = 12;
 
+Kappa = 0.1;
 
 beatIdx1 = 2;
 beatIdx2 = 2;
 doSingleExperiment;
-
-% for beatIdx1 = 1:3
-%     for beatIdx2 = 1:3
-%         doSingleExperiment;
-%     end
-% end

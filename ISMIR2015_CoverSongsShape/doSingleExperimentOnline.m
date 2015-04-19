@@ -1,14 +1,14 @@
 %Perform an experiment on covers80
 %for a particular choice of beatIdx1 and beatIdx2 for the tempos in the
 %first group and the tempos in the second group, as well as the parameters
-%NIters, K, and Alpha for PatchMatch and dim, BeatsPerWin
+%NIters, K, and Alpha for PatchMatch and BeatsPerWin
 addpath('BeatSyncFeatures');
 addpath('PatchMatch');
 addpath('SequenceAlignment');
 addpath('SimilarityMatrices');
 
 %Make directory to hold the results if it doesn't exist
-dirName = sprintf('Results_%i_%i_%i_%i_%g', dim, BeatsPerWin, NIters, K, Alpha);
+dirName = sprintf('ResultsDim_%i_%i_%i_%g', BeatsPerWin, NIters, K, Alpha);
 if ~exist(dirName);
     mkdir(dirName);
 end
@@ -26,7 +26,7 @@ fprintf(1, '\n\n\n');
 disp('======================================================');
 fprintf(1, 'RUNNING EXPERIMENTS\n');
 fprintf(1, 'Patch Match NIters = %i, K = %i, Alpha = %g\n', NIters, K, Alpha);
-fprintf(1, 'dim = %i, BeatsPerWin = %i\n', dim, BeatsPerWin);
+fprintf(1, 'BeatsPerWin = %i\n', BeatsPerWin);
 fprintf(1, 'beatIdx1 = %i, beatIdx2 = %i\n', beatIdx1, beatIdx2);
 disp('======================================================');
 fprintf(1, '\n\n\n');
@@ -60,14 +60,18 @@ for jj = 1:N
     
     thisMsMFCC = cell(N, 1);
     for ii = 1:N
-        song = load(['BeatSyncFeatures', filesep, files1{ii}, '.mat'], 'allBeatSyncChroma', 'allMFCC', 'allSampleDelaysMFCC');
+        song = load(['BeatSyncFeatures', filesep, files1{ii}, '.mat'], 'allBeatSyncChroma', 'allMFCC', 'allSampleDelaysMFCC', 'allbts');
         MFCCsX = song.allMFCC{beatIdx1};
         SampleDelaysX = song.allSampleDelaysMFCC{beatIdx1};
+        bts1 = song.allbts{beatIdx1};
         %Step 1: Do patch match, computing self-similarity matrices on
         %demand
+        fprintf(1, 'Comparing %i versus %i\n', jj, ii);
+        disp('Doing PatchMatch...');
         tic;
-        MMFCC = patchMatch1DMatlab( MFCCsX, SampleDelaysX, MFCCsY, SampleDelaysY, NIters, K, Alpha );
+        MMFCC = patchMatch1DMatlab( MFCCsX, SampleDelaysX, bts1, MFCCsY, SampleDelaysY, bts2, BeatsPerWin, NIters, K, Alpha );
         toc;
+        disp('Finished PatchMatch...');
         thisMsMFCC{ii} = sparse(MMFCC);
         ScoresMFCC(ii, jj) = sqrt(prod(size(MMFCC)))/swalignimp(double(full(MMFCC)));
         

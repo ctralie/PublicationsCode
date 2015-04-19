@@ -3,31 +3,38 @@
 %NIters: Number of iterations (not many are needed before convergence)
 %K: Number of nearest neighbors to consider in the nearest neighbor field
 %(for reshaping purposes) and returns a distance
-function [ NNF, Queries ] = patchMatch1DMatlab( MFCCsX, SampleDelaysX, bts1, ...
+function [ D, NNF, Queries ] = patchMatch1DMatlab( MFCCsX, SampleDelaysX, bts1, ...
                                                 MFCCsY, SampleDelaysY, bts2, BeatsPerWin, NIters, K, Alpha )
     addpath('../SimilarityMatrices');
     SwitchOddEven = 0;
         
-    N = size(MFCCsX, 1);
-    M = size(MFCCsY, 1);
+    N = length(bts1);
+    M = length(bts2);
     
     beatIdx1 = zeros(1, length(bts1));
     idx = 1;
     for ii = 1:N
-        while(SampleDelaysX(idx) < bts(ii))
+        while(SampleDelaysX(idx) < bts1(ii) && idx < length(SampleDelaysX))
             idx = idx + 1;
         end
         beatIdx1(ii) = idx;
+        if idx == length(SampleDelaysX)
+            break;
+        end
     end
     beatIdx2 = zeros(1, length(bts2));
     idx = 1;
     for ii = 1:M
-        while(SampleDelaysY(idx) < bts2(ii))
+        while(SampleDelaysY(idx) < bts2(ii) && idx < length(SampleDelaysY))
             idx = idx + 1;
+        end
+        if idx == length(SampleDelaysY)
+            break;
         end
         beatIdx2(ii) = idx;
     end        
-    
+    N = N - BeatsPerWin;
+    M = M - BeatsPerWin;
     
     Queried = zeros(N, M);%Keep track of distances that are already queried
     %so that no work is redone (TODO: Make this sparse?)
@@ -35,12 +42,17 @@ function [ NNF, Queries ] = patchMatch1DMatlab( MFCCsX, SampleDelaysX, bts1, ...
     %Randomly initialize nearest neighbor field
     NNF = randi(M, N, K);
     DNNF = zeros(N, K);
-    parfor ii = 1:N
-        fprintf(1, '.');
-        D1 = getBeatSyncSSM(MFCCsX, SampleDelaysX, beatIdx1, BeatsPerWin, ii);
+    MFCCsX = gpuArray(single(MFCCsX));
+    MFCCsY = gpuArray(single(MFCCsY));
+    for ii = 1:N
+        if mod(ii, 50) == 0;
+            fprintf(1, '.');
+        end
+        D1 = getBeatSyncSSM(MFCCsX, beatIdx1, BeatsPerWin, ii);
         for kk = 1:K
-            D2 = getBeatSyncSSM(MFCCsY, SampleDelaysY, beatIdx2, BeatsPerWin, NNF(ii, kk));
-            DNNF(ii, kk) = sqrt(sum( (D1(:)-D2(:)).^2 ));
+            D2 = getBeatSyncSSM(MFCCsY, beatIdx2, BeatsPerWin, NNF(ii, kk));
+            L2Dist = bsxfun(@minus, D1, D2);
+            DNNF(ii, kk) = sqrt(gather( sum(L2Dist(:).^2) ));
         end
     end
     for ii = 1:N
@@ -49,10 +61,11 @@ function [ NNF, Queries ] = patchMatch1DMatlab( MFCCsX, SampleDelaysX, bts1, ...
         end
     end
     
+    fprintf(1, '\n');
     for iter = 1:NIters
         fprintf(1, 'iter = %i\n', iter);
         for ii = 1:N
-            if N > 1000 && mod(ii, 1000) == 0
+            if mod(ii, 50) == 0
                 fprintf(1, '.');
             end
             %STEP 1: Propagate
@@ -62,7 +75,7 @@ function [ NNF, Queries ] = patchMatch1DMatlab( MFCCsX, SampleDelaysX, bts1, ...
                 idx = N - ii + 1;
                 di = 1;
             end
-            D1 = getBeatSyncSSM(MFCCsX, SampleDelaysX, beatIdx1, BeatsPerWin, idx);
+            D1 = getBeatSyncSSM(MFCCsX, beatIdx1, BeatsPerWin, idx);
             if ii > 1
                 indices = [NNF(ii, :) zeros(1, K)];
                 dists = [DNNF(ii, :) inf*ones(1, K)];
@@ -71,13 +84,14 @@ function [ NNF, Queries ] = patchMatch1DMatlab( MFCCsX, SampleDelaysX, bts1, ...
                     if otherM < 1 || otherM > M %Bounds check
                         continue;
                     end
-                    if Queried(ii, otherM) %Don't repeat work
+                    if Queried(idx, otherM) %Don't repeat work
                         continue;
                     end
-                    Queried(ii, otherM) = 1;
+                    Queried(idx, otherM) = 1;
                     indices(K+kk) = otherM;
-                    D2 = getBeatSyncSSM(MFCCsY, SampleDelaysY, beatIdx2, BeatsPerWin, otherM);
-                    dists(K+kk) = sqrt(sum( (D1(:)-D2(:)).^2 ));
+                    D2 = getBeatSyncSSM(MFCCsY, beatIdx2, BeatsPerWin, otherM);
+                    L2Dist = bsxfun(@minus, D1, D2);
+                    dists(K+kk) = sqrt(gather( sum(L2Dist(:).^2) ));
                 end
                 %Pick the top K neighbors out of the K old ones and 
                 %the K new ones
@@ -92,20 +106,21 @@ function [ NNF, Queries ] = patchMatch1DMatlab( MFCCsX, SampleDelaysX, bts1, ...
             radii = round(Ri*Alpha.^(0:NR-1));
             indices = [NNF(ii, :) zeros(1, K*NR)];
             dists = [DNNF(ii, :) inf*ones(1, K*NR)];
+            %TODO: Make this parfor
             for rr = 1:NR
                 for kk = 1:K
                     otherM = radii(rr) + NNF(idx, kk);
                     if otherM < 1 || otherM > M %Bounds check
                         continue;
                     end
-                    if Queried(ii, otherM) %Don't repeat work
+                    if Queried(idx, otherM) %Don't repeat work
                         continue;
                     end
-                    Queried(ii, otherM) = 1;
+                    Queried(idx, otherM) = 1;
                     indices(K+(rr-1)*K+kk) = otherM;
-                    D2 = getBeatSyncSSM(MFCCsY, SampleDelaysY, beatIdx2, BeatsPerWin, otherM);
-                    dists(K+kk) = sqrt(sum( (D1(:)-D2(:)).^2 ));
-                    dists(K+(rr-1)*K+kk) = sqrt(sum( (D1(:)-D2(:)).^2 ));
+                    D2 = getBeatSyncSSM(MFCCsY, beatIdx2, BeatsPerWin, otherM);
+                    L2Dist = bsxfun(@minus, D1, D2);
+                    dists(K+(rr-1)*K+kk) = sqrt(gather( sum(L2Dist(:).^2) ));
                 end
             end
             %Pick the top K neighbors out of the K old ones and 
@@ -115,6 +130,9 @@ function [ NNF, Queries ] = patchMatch1DMatlab( MFCCsX, SampleDelaysX, bts1, ...
             NNF(ii, :) = indices(1:K);
             DNNF(ii, :) = dists(1:K);
         end
+        fprintf(1, 'Queries: %g\n', sum(Queried(:))/prod(size(Queried)));
     end
     Queries = sum(Queried(:));
+    S1 = 1:N;
+    D = sparse(repmat(S1(:), [K, 1]), NNF(:), ones(N*K, 1), N, M);
 end

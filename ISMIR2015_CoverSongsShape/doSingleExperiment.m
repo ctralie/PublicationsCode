@@ -3,12 +3,11 @@
 %first group and the tempos in the second group, as well as the parameters
 %NIters, K, and Alpha for PatchMatch and dim, BeatsPerWin
 addpath('BeatSyncFeatures');
-addpath('PatchMatch');
 addpath('SequenceAlignment');
 addpath('SimilarityMatrices');
 
 %Make directory to hold the results if it doesn't exist
-dirName = sprintf('Results_%i_%i_%i_%i_%g', dim, BeatsPerWin, NIters, K, Alpha);
+dirName = sprintf('Results_%i_%i_%g', dim, BeatsPerWin, Kappa);
 if ~exist(dirName);
     mkdir(dirName);
 end
@@ -25,8 +24,7 @@ N = length(files1);
 fprintf(1, '\n\n\n');
 disp('======================================================');
 fprintf(1, 'RUNNING EXPERIMENTS\n');
-fprintf(1, 'Patch Match NIters = %i, K = %i, Alpha = %g\n', NIters, K, Alpha);
-fprintf(1, 'dim = %i, BeatsPerWin = %i\n', dim, BeatsPerWin);
+fprintf(1, 'dim = %i, BeatsPerWin = %i, Kappa = %g\n', dim, BeatsPerWin, Kappa);
 fprintf(1, 'beatIdx1 = %i, beatIdx2 = %i\n', beatIdx1, beatIdx2);
 disp('======================================================');
 fprintf(1, '\n\n\n');
@@ -43,8 +41,6 @@ for ii = 1:N
     ChromasOrig{ii} = song.allBeatSyncChroma{beatIdx1};
     toc;
 end
-
-AllMsMFCC = cell(N, N);%Store sparse cross-similarity matrices from patch match
 
 ScoresChroma = inf*ones(N, N); %Chroma by itself
 ScoresMFCC = inf*ones(N, N); %MFCC by itself
@@ -65,14 +61,11 @@ for jj = 1:N
     thisMsMFCC = cell(N, 1);
     for ii = 1:N
         %Step 1: Compute MFCC Self-Similarity features
-        %Precompute L2 cross-similarity matrix
+        %Precompute L2 cross-similarity matrix and find Kappa percent mutual nearest
+        %neighbors
         CSM = bsxfun(@plus, dot(DsOrig{ii}, DsOrig{ii}, 2), dot(thisDs, thisDs, 2)') - 2*(DsOrig{ii}*thisDs');
-        CSM = sqrt(CSM);
-        %Do patch match
-%         MMFCC = patchMatch1DIMPMatlab( CSM, NIters, K, Alpha );
-        MMFCC = groundTruthKNN( CSM, round(size(CSM, 2)*0.1) );
-        MMFCC = MMFCC.*groundTruthKNN( CSM', round(size(CSM', 2)*0.1) )';
-%         thisMsMFCC{ii} = sparse(MMFCC);
+        MMFCC = groundTruthKNN( CSM, round(size(CSM, 2)*Kappa) );
+        MMFCC = MMFCC.*groundTruthKNN( CSM', round(size(CSM', 2)*Kappa) )';
         ScoresMFCC(ii, jj) = sqrt(prod(size(MMFCC)))/swalignimp(double(full(MMFCC)));
         
         %Step 2: Compute transposed chroma delay features
@@ -80,24 +73,23 @@ for jj = 1:N
         ChromaX = getBeatSyncChromaDelay(ChromaX, BeatsPerWin, 0);
         allScoresChroma = zeros(1, size(ChromaY, 2));
         allScoresCombined = zeros(1, size(ChromaY, 2));
-        for oti = 0:size(ChromaY, 2) - 1
+        for oti = 0:size(ChromaY, 2) - 1 
+            %Transpose chroma features
             thisY = getBeatSyncChromaDelay(ChromaY, BeatsPerWin, 0);
-            %Full oti comparison matrix
-            Comp = zeros(size(ChromaX, 1), size(thisY, 1), size(ChromaX, 2));
-            %Do OTI on each element individually
-            for cc = 0:size(ChromaY, 2)-1
-                thisY = getBeatSyncChromaDelay(ChromaY, BeatsPerWin, oti + cc);
-                Comp(:, :, cc+1) = ChromaX*thisY'; %Cosine distance
-            end
-            [~, Comp] = max(Comp, [], 3);
-            CSMChroma = (Comp == 1);
-            allScoresChroma(oti+1) = sqrt(prod(size(CSMChroma)))/swalignimp(double(CSMChroma));
-            dims = [size(CSMChroma); size(MMFCC)];
+            %Precompute L2 cross-similarity matrix and find Kappa percent mutual nearest
+            %neighbors
+            CSMChroma = bsxfun(@plus, sum(ChromaX.^2, 2), sum(thisY.^2, 2)') - 2*ChromaX*thisY';
+            MChroma = groundTruthKNN( CSMChroma, round(size(CSMChroma, 2)*Kappa) );
+            MChroma = MChroma.*groundTruthKNN( CSMChroma', round(size(CSMChroma', 2)*Kappa) )';        
+
+            allScoresChroma(oti+1) = sqrt(prod(size(CSMChroma)))/swalignimp(double(MChroma));
+            dims = [size(MChroma); size(MMFCC)];
             dims = min(dims, [], 1);
-            M = double(CSMChroma(1:dims(1), 1:dims(2)) + MMFCC(1:dims(1), 1:dims(2)) );
+            M = double(MChroma(1:dims(1), 1:dims(2)) + MMFCC(1:dims(1), 1:dims(2)) );
             M = double(M > 0);
             allScoresCombined(oti+1) = sqrt(prod(size(M)))/swalignimp(M);
         end
+        %Find best scores over transpositions
         [ChromaScore, idx] = min(allScoresChroma);
         ScoresChroma(ii, jj) = ChromaScore;
         MinTransp(ii, jj) = idx;
@@ -106,8 +98,7 @@ for jj = 1:N
         MinTranspCombined(ii, jj) = idx;
         fprintf(1, '.');
     end
-    AllMsMFCC(:, jj) = thisMsMFCC;
 end
 
 save(sprintf('%s/%i_%i.mat', dirName, beatIdx1, beatIdx2), ...
-    'AllMsMFCC', 'ScoresChroma', 'ScoresMFCC', 'Scores', 'MinTransp', 'MinTranspCombined');
+    'ScoresChroma', 'ScoresMFCC', 'Scores', 'MinTransp', 'MinTranspCombined');
