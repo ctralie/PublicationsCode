@@ -21,7 +21,11 @@ cd('..');
 BeatsPerWin = 12;
 dim = 200;
 
-Kappa = 0.1;
+%Kappa = 0.1;
+Kappa = -1; %Do patch match
+NIters = 5;
+Alpha = 0.05;
+K = 7;
 
 beatIdx1 = 2;
 beatIdx2 = 2;

@@ -7,8 +7,17 @@ addpath('SequenceAlignment');
 addpath('SimilarityMatrices');
 addpath('PatchMatch');
 
+DOPATCHMATCH = 0;
+if Kappa == -1
+    DOPATCHMATCH = 1;
+end
+
 %Make directory to hold the results if it doesn't exist
-dirName = sprintf('Results_%i_%i_%g', dim, BeatsPerWin, Kappa);
+if DOPATCHMATCH
+    dirName = sprintf('Results_%i_%i_%i_%i_%g', dim, BeatsPerWin, NIters, K, Alpha);
+else
+    dirName = sprintf('Results_%i_%i_%g', dim, BeatsPerWin, Kappa);
+end
 if ~exist(dirName);
     mkdir(dirName);
 end
@@ -25,7 +34,12 @@ N = length(files1);
 fprintf(1, '\n\n\n');
 disp('======================================================');
 fprintf(1, 'RUNNING EXPERIMENTS\n');
-fprintf(1, 'dim = %i, BeatsPerWin = %i, Kappa = %g\n', dim, BeatsPerWin, Kappa);
+fprintf(1, 'dim = %i, BeatsPerWin = %i\n', dim, BeatsPerWin);
+if DOPATCHMATCH
+    fprintf(1, 'PatchMatch K = %i, NIters = %i, Alpha = %g\n', K, NIters, Alpha);
+else
+    fprintf(1, 'Nearest Neighbor Kappa = %g\n', Kappa);
+end
 fprintf(1, 'beatIdx1 = %i, beatIdx2 = %i\n', beatIdx1, beatIdx2);
 disp('======================================================');
 fprintf(1, '\n\n\n');
@@ -65,8 +79,12 @@ for jj = 1:N
         %Precompute L2 cross-similarity matrix and find Kappa percent mutual nearest
         %neighbors
         CSM = bsxfun(@plus, dot(DsOrig{ii}, DsOrig{ii}, 2), dot(thisDs, thisDs, 2)') - 2*(DsOrig{ii}*thisDs');
-        MMFCC = groundTruthKNN( CSM, round(size(CSM, 2)*Kappa) );
-        MMFCC = MMFCC.*groundTruthKNN( CSM', round(size(CSM', 2)*Kappa) )';
+        if DOPATCHMATCH
+            MMFCC = patchMatch1DIMPMatlab( CSM, NIters, K, Alpha );
+        else
+            MMFCC = groundTruthKNN( CSM, round(size(CSM, 2)*Kappa) );
+            MMFCC = MMFCC.*groundTruthKNN( CSM', round(size(CSM', 2)*Kappa) )';
+        end
         ScoresMFCC(ii, jj) = sqrt(prod(size(MMFCC)))/swalignimp(double(full(MMFCC)));
         
         %Step 2: Compute transposed chroma delay features
@@ -77,16 +95,19 @@ for jj = 1:N
         for oti = 0:size(ChromaY, 2) - 1 
             %Transpose chroma features
             thisY = getBeatSyncChromaDelay(ChromaY, BeatsPerWin, 0);
-            %Precompute L2 cross-similarity matrix and find Kappa percent mutual nearest
-            %neighbors
-            CSMChroma = bsxfun(@plus, sum(ChromaX.^2, 2), sum(thisY.^2, 2)') - 2*ChromaX*thisY';
-            MChroma = groundTruthKNN( CSMChroma, round(size(CSMChroma, 2)*Kappa) );
-            MChroma = MChroma.*groundTruthKNN( CSMChroma', round(size(CSMChroma', 2)*Kappa) )';        
+            %Compute the OTI of each delay window
+            Comp = zeros(size(ChromaX, 1), size(thisY, 1), size(ChromaX, 2));
+            for cc = 0:size(ChromaY, 2)-1
+                thisY = getBeatSyncChromaDelay(ChromaY, BeatsPerWin, oti + cc);
+                Comp(:, :, cc+1) = ChromaX*thisY'; %Cosine distance
+            end
+            [~, Comp] = max(Comp, [], 3);
+            CSMChroma = (Comp == 1);%Only keep elements with no shift
 
-            allScoresChroma(oti+1) = sqrt(prod(size(CSMChroma)))/swalignimp(double(full(MChroma)));
-            dims = [size(MChroma); size(MMFCC)];
+            allScoresChroma(oti+1) = sqrt(prod(size(CSMChroma)))/swalignimp(double(CSMChroma));
+            dims = [size(CSMChroma); size(MMFCC)];
             dims = min(dims, [], 1);
-            M = double(MChroma(1:dims(1), 1:dims(2)) + MMFCC(1:dims(1), 1:dims(2)) );
+            M = double(CSMChroma(1:dims(1), 1:dims(2)) + MMFCC(1:dims(1), 1:dims(2)) );
             M = double(M > 0);
             M = full(M);
             allScoresCombined(oti+1) = sqrt(prod(size(M)))/swalignimp(M);
