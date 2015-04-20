@@ -83,11 +83,12 @@ for jj = 1:N
             MChroma = groundTruthKNN( CSMChroma, round(size(CSMChroma, 2)*Kappa) );
             MChroma = MChroma.*groundTruthKNN( CSMChroma', round(size(CSMChroma', 2)*Kappa) )';        
 
-            allScoresChroma(oti+1) = sqrt(prod(size(CSMChroma)))/swalignimp(double(MChroma));
+            %allScoresChroma(oti+1) = sqrt(prod(size(CSMChroma)))/swalignimp(double(MChroma));
             dims = [size(MChroma); size(MMFCC)];
             dims = min(dims, [], 1);
             M = double(MChroma(1:dims(1), 1:dims(2)) + MMFCC(1:dims(1), 1:dims(2)) );
             M = double(M > 0);
+            M = full(M);
             allScoresCombined(oti+1) = sqrt(prod(size(M)))/swalignimp(M);
         end
         %Find best scores over transpositions
