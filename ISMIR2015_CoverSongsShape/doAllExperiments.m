@@ -4,7 +4,7 @@
 %so this step can be skipped if you are on these architectures and your
 %compiler is not configured
 cd('SequenceAlignment');
-mex swalignimp.cpp;
+mex swalignimpconstrained.cpp;
 cd('..');
 
 

@@ -85,7 +85,7 @@ for jj = 1:N
             MMFCC = groundTruthKNN( CSM, round(size(CSM, 2)*Kappa) );
             MMFCC = MMFCC.*groundTruthKNN( CSM', round(size(CSM', 2)*Kappa) )';
         end
-        ScoresMFCC(ii, jj) = sqrt(prod(size(MMFCC)))/swalignimp(double(full(MMFCC)));
+        ScoresMFCC(ii, jj) = sqrt(prod(size(MMFCC)))/swalignimpconstrained(double(full(MMFCC)));
         
         %Step 2: Compute transposed chroma delay features
         ChromaX = ChromasOrig{ii};
@@ -104,13 +104,13 @@ for jj = 1:N
             [~, Comp] = max(Comp, [], 3);
             CSMChroma = (Comp == 1);%Only keep elements with no shift
 
-            allScoresChroma(oti+1) = sqrt(prod(size(CSMChroma)))/swalignimp(double(CSMChroma));
+            allScoresChroma(oti+1) = sqrt(prod(size(CSMChroma)))/swalignimpconstrained(double(CSMChroma));
             dims = [size(CSMChroma); size(MMFCC)];
             dims = min(dims, [], 1);
             M = double(CSMChroma(1:dims(1), 1:dims(2)) + MMFCC(1:dims(1), 1:dims(2)) );
             M = double(M > 0);
             M = full(M);
-            allScoresCombined(oti+1) = sqrt(prod(size(M)))/swalignimp(M);
+            allScoresCombined(oti+1) = sqrt(prod(size(M)))/swalignimpconstrained(M);
         end
         %Find best scores over transpositions
         [ChromaScore, idx] = min(allScoresChroma);
