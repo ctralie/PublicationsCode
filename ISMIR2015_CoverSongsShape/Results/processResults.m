@@ -30,7 +30,7 @@ for k = 1:length(Kappa)
                     end
                 end
             end
-            [~, s] = min(ScoresF, [], 2);
+            [~, s] = max(ScoresMFCC, [], 2);
             fprintf(1, '<td><h2>%i</h2></td>', sum(s' == 1:80));
         end
         fprintf(1, '</tr>\n');
