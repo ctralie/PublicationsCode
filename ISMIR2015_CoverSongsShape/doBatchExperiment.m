@@ -1,6 +1,12 @@
 %A wrapper around doSingleExperiment for SLURM
 %Input Parameter: ExperimentIdx
 
+%Compile mex files
+cd('SequenceAlignment');
+mex swalignimp.cpp;
+mex swalignimpconstrained.cpp;
+cd('..');
+
 %Self-Similarity parameters
 dim = [100, 200, 300];
 BeatsPerWin = [8, 10, 12, 14];

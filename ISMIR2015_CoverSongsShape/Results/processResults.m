@@ -27,6 +27,17 @@ for k = 1:length(Kappa)
                         ScoresF = max(ScoresF, Scores);
                         ScoresChromaF = max(ScoresChromaF, ScoresChroma);
                         ScoresMFCCF = max(ScoresMFCCF, ScoresMFCC);
+                        %Compute norm based on CSM sizes
+                        Norms = zeros(80, 80);
+                        for ii = 1:80
+                            for jj = 1:80
+                                Norms(ii, jj) = sqrt(prod(CrossSizes{ii, jj}));
+                                %Norms(ii, jj) = min(CrossSizes{ii, jj})*sqrt(2);
+                            end
+                        end
+                        ScoresF = ScoresF./Norms;
+                        ScoresChromaF = ScoresChromaF./Norms;
+                        ScoresMFCCF = ScoresMFCCF./Norms;
                     end
                 end
             end

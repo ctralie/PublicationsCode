@@ -44,11 +44,26 @@ fprintf(1, 'beatIdx1 = %i, beatIdx2 = %i\n', beatIdx1, beatIdx2);
 disp('======================================================');
 fprintf(1, '\n\n\n');
 
+
+%Scores for ordinary Smith Waterman
 ScoresChroma = zeros(N, N); %Chroma by itself
 ScoresMFCC = zeros(N, N); %MFCC by itself
 Scores = zeros(N, N); %Combined
-MinTransp = zeros(N, N); %Transposition that led to the lowest score
-MinTranspCombined = zeros(N, N);
+MaxTransp = zeros(N, N); %Transposition that led to the highest score
+MaxTranspCombined = zeros(N, N);
+
+
+%Scores for Smith Waterman with constraints
+CScoresChroma = zeros(N, N); %Chroma by itself
+CScoresMFCC = zeros(N, N); %MFCC by itself
+CScores = zeros(N, N); %Combined
+CMaxTransp = zeros(N, N); %Transposition that led to the highest score
+CMaxTranspCombined = zeros(N, N);
+
+%Keep track of the sizes of all of the cross-similarity matrices for
+%convenience
+CrossSizes = cell(N, N);
+
 
 %Split the precomputation of distance matrices into 4 groups to save memory
 %(at the cost of some computation time since the cover distance matrices are
@@ -83,20 +98,23 @@ for batch = 0:3
             %Precompute L2 cross-similarity matrix and find Kappa percent mutual nearest
             %neighbors
             CSM = bsxfun(@plus, dot(DsOrig{ii}, DsOrig{ii}, 2), dot(thisDs, thisDs, 2)') - 2*(DsOrig{ii}*thisDs');
-            DiagNorm = min(size(CSM))*sqrt(2); %Normalize by the diagonal of the smaller song
+            CrossSizes{ii+batch*N/4, jj} = size(CSM);
             if DOPATCHMATCH
                 MMFCC = patchMatch1DIMPMatlab( CSM, NIters, K, Alpha );
             else
                 MMFCC = groundTruthKNN( CSM, round(size(CSM, 2)*Kappa) );
                 MMFCC = MMFCC.*groundTruthKNN( CSM', round(size(CSM', 2)*Kappa) )';
             end
-            ScoresMFCC(ii+batch*N/4, jj) = swalignimpconstrained(double(full(MMFCC))) / DiagNorm;
+            ScoresMFCC(ii+batch*N/4, jj) = swalignimp(double(full(MMFCC)));
+            CScoresMFCC(ii+batch*N/4, jj) = swalignimpconstrained(double(full(MMFCC)));
 
             %Step 2: Compute transposed chroma delay features
             ChromaX = ChromasOrig{ii};
             ChromaX = getBeatSyncChromaDelay(ChromaX, BeatsPerWin, 0);
             allScoresChroma = zeros(1, size(ChromaY, 2));
             allScoresCombined = zeros(1, size(ChromaY, 2));
+            CallScoresChroma = zeros(1, size(ChromaY, 2));
+            CallScoresCombined = zeros(1, size(ChromaY, 2));
             for oti = 0:size(ChromaY, 2) - 1 
                 %Transpose chroma features
                 thisY = getBeatSyncChromaDelay(ChromaY, BeatsPerWin, 0);
@@ -109,25 +127,35 @@ for batch = 0:3
                 [~, Comp] = max(Comp, [], 3);
                 CSMChroma = (Comp == 1);%Only keep elements with no shift
 
-                allScoresChroma(oti+1) = swalignimpconstrained(double(CSMChroma)) / DiagNorm;
+                allScoresChroma(oti+1) = swalignimp(double(CSMChroma));
+                CallScoresChroma(oti+1) = swalignimpconstrained(double(CSMChroma));
                 dims = [size(CSMChroma); size(MMFCC)];
                 dims = min(dims, [], 1);
                 M = double(CSMChroma(1:dims(1), 1:dims(2)) + MMFCC(1:dims(1), 1:dims(2)) );
                 M = double(M > 0);
                 M = full(M);
-                allScoresCombined(oti+1) = swalignimpconstrained(M) / DiagNorm;
+                allScoresCombined(oti+1) = swalignimp(M);
+                CallScoresCombined(oti+1) = swalignimpconstrained(M);
             end
             %Find best scores over transpositions
             [ChromaScore, idx] = max(allScoresChroma);
             ScoresChroma(ii+batch*N/4, jj) = ChromaScore;
-            MinTransp(ii+batch*N/4, jj) = idx;
+            MaxTransp(ii+batch*N/4, jj) = idx;
+            [ChromaScore, idx] = max(CallScoresChroma);
+            CScoresChroma(ii+batch*N/4, jj) = ChromaScore;
+            CMaxTransp(ii+batch*N/4, jj) = idx;            
+            
             [Score, idx] = max(allScoresCombined);
             Scores(ii+batch*N/4, jj) = Score;
-            MinTranspCombined(ii+batch*N/4, jj) = idx;
+            MaxTranspCombined(ii+batch*N/4, jj) = idx;
+            [Score, idx] = max(CallScoresCombined);
+            CScores(ii+batch*N/4, jj) = Score;
+            CMaxTranspCombined(ii+batch*N/4, jj) = idx;
             fprintf(1, '.');
         end
     end
 end
 
 save(sprintf('%s/%i_%i.mat', dirName, beatIdx1, beatIdx2), ...
-    'ScoresChroma', 'ScoresMFCC', 'Scores', 'MinTransp', 'MinTranspCombined');
+    'CrossSizes', 'ScoresChroma', 'ScoresMFCC', 'Scores', 'MaxTransp', 'MaxTranspCombined', ...
+    'CScoresChroma', 'CScoresMFCC', 'CScores', 'CMaxTransp', 'CMaxTranspCombined');
