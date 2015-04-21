@@ -30,7 +30,7 @@ double Delta(double a, double b) {
 
 double Match(double i) {
 	double matchScore = 1;
-	double mismatchScore = -0.9;
+	double mismatchScore = -1;
 	if (i == 0) {
 		return mismatchScore;
 	}

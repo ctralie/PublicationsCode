@@ -36,13 +36,12 @@ void mexFunction(int nOutArray, mxArray *OutArray[], int nInArray, const mxArray
 	double matchScore = 2;
 	double mismatchScore = -3;
 	double gapScore = -2;
-	//Don't penalize as much at the beginning
 	D[0] = 0;
 	for (int i = 1; i < N; i++) {
-		D[i] = i*gapScore;
+		D[i] = 0;
 	}
 	for (int i = 1; i < M; i++) {
-		D[i*N] = i*gapScore;
+		D[i*N] = 0;
 	}
 
 	//mexPrintf("gapScore = %g, matchScore = %g, mismatchScore = %g\n", gapScore, matchScore, mismatchScore);

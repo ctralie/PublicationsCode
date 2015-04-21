@@ -14,9 +14,9 @@ end
 
 %Make directory to hold the results if it doesn't exist
 if DOPATCHMATCH
-    dirName = sprintf('Results_%i_%i_%i_%i_%g', dim, BeatsPerWin, NIters, K, Alpha);
+    dirName = sprintf('Results/%i_%i_%i_%i_%g', dim, BeatsPerWin, NIters, K, Alpha);
 else
-    dirName = sprintf('Results_%i_%i_%g', dim, BeatsPerWin, Kappa);
+    dirName = sprintf('Results/%i_%i_%g', dim, BeatsPerWin, Kappa);
 end
 if ~exist(dirName);
     mkdir(dirName);
@@ -57,9 +57,9 @@ for ii = 1:N
     toc;
 end
 
-ScoresChroma = inf*ones(N, N); %Chroma by itself
-ScoresMFCC = inf*ones(N, N); %MFCC by itself
-Scores = inf*ones(N, N); %Combined
+ScoresChroma = zeros(N, N); %Chroma by itself
+ScoresMFCC = zeros(N, N); %MFCC by itself
+Scores = zeros(N, N); %Combined
 MinTransp = zeros(N, N); %Transposition that led to the lowest score
 MinTranspCombined = zeros(N, N);
 
@@ -79,13 +79,14 @@ for jj = 1:N
         %Precompute L2 cross-similarity matrix and find Kappa percent mutual nearest
         %neighbors
         CSM = bsxfun(@plus, dot(DsOrig{ii}, DsOrig{ii}, 2), dot(thisDs, thisDs, 2)') - 2*(DsOrig{ii}*thisDs');
+        DiagNorm = min(size(CSM))*sqrt(2); %Normalize by the diagonal of the smaller song
         if DOPATCHMATCH
             MMFCC = patchMatch1DIMPMatlab( CSM, NIters, K, Alpha );
         else
             MMFCC = groundTruthKNN( CSM, round(size(CSM, 2)*Kappa) );
             MMFCC = MMFCC.*groundTruthKNN( CSM', round(size(CSM', 2)*Kappa) )';
         end
-        ScoresMFCC(ii, jj) = sqrt(prod(size(MMFCC)))/swalignimpconstrained(double(full(MMFCC)));
+        ScoresMFCC(ii, jj) = swalignimpconstrained(double(full(MMFCC))) / DiagNorm;
         
         %Step 2: Compute transposed chroma delay features
         ChromaX = ChromasOrig{ii};
@@ -104,19 +105,19 @@ for jj = 1:N
             [~, Comp] = max(Comp, [], 3);
             CSMChroma = (Comp == 1);%Only keep elements with no shift
 
-            allScoresChroma(oti+1) = sqrt(prod(size(CSMChroma)))/swalignimpconstrained(double(CSMChroma));
+            allScoresChroma(oti+1) = swalignimpconstrained(double(CSMChroma)) / DiagNorm;
             dims = [size(CSMChroma); size(MMFCC)];
             dims = min(dims, [], 1);
             M = double(CSMChroma(1:dims(1), 1:dims(2)) + MMFCC(1:dims(1), 1:dims(2)) );
             M = double(M > 0);
             M = full(M);
-            allScoresCombined(oti+1) = sqrt(prod(size(M)))/swalignimpconstrained(M);
+            allScoresCombined(oti+1) = swalignimpconstrained(M) / DiagNorm;
         end
         %Find best scores over transpositions
-        [ChromaScore, idx] = min(allScoresChroma);
+        [ChromaScore, idx] = max(allScoresChroma);
         ScoresChroma(ii, jj) = ChromaScore;
         MinTransp(ii, jj) = idx;
-        [Score, idx] = min(allScoresCombined);
+        [Score, idx] = max(allScoresCombined);
         Scores(ii, jj) = Score;
         MinTranspCombined(ii, jj) = idx;
         fprintf(1, '.');
