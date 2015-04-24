@@ -1,9 +1,13 @@
 
 
 %Self-Similarity parameters
-dim = [100, 200, 300];
-BeatsPerWin = [8, 10, 12, 14];
-Kappa = [0.05, 0.1, 0.15];
+%dim = [100, 200, 300];
+%BeatsPerWin = [8, 10, 12, 14];
+%Kappa = [0.05, 0.1, 0.15];
+
+dim = 200;
+BeatsPerWin = 12;
+Kappa = 0.1;
 
 for k = 1:length(Kappa)
     fprintf(1, '<h1>Kappa = %g</h1>\n<table border = "1">\n', Kappa(k));
@@ -22,26 +26,28 @@ for k = 1:length(Kappa)
             for beatIdx1 = 1:3
                 for beatIdx2 = 1:3
                     filename = sprintf('%s/%i_%i.mat', dirName, beatIdx1, beatIdx2);
-                    if exist(filename) %TODO: Some of the batch tests terminated by hitting memory ceiling
+                    if exist(filename)
                         load(filename);
-                        ScoresF = max(ScoresF, Scores);
-                        ScoresChromaF = max(ScoresChromaF, ScoresChroma);
-                        ScoresMFCCF = max(ScoresMFCCF, ScoresMFCC);
                         %Compute norm based on CSM sizes
                         Norms = zeros(80, 80);
                         for ii = 1:80
                             for jj = 1:80
-                                Norms(ii, jj) = sqrt(prod(CrossSizes{ii, jj}));
+                                %Norms(ii, jj) = sqrt(prod(CrossSizes{ii, jj}));
                                 %Norms(ii, jj) = min(CrossSizes{ii, jj})*sqrt(2);
+                                Norms(ii, jj) = 1;
                             end
                         end
-                        ScoresF = ScoresF./Norms;
-                        ScoresChromaF = ScoresChromaF./Norms;
-                        ScoresMFCCF = ScoresMFCCF./Norms;
+                        Scores = Scores./Norms;
+                        ScoresChroma = ScoresChroma./Norms;
+                        ScoresMFCC = ScoresMFCC./Norms;
+                        
+                        ScoresF = max(ScoresF, Scores);
+                        ScoresChromaF = max(ScoresChromaF, ScoresChroma);
+                        ScoresMFCCF = max(ScoresMFCCF, ScoresMFCC);
                     end
                 end
             end
-            [~, s] = max(ScoresMFCC, [], 2);
+            [~, s] = max(ScoresChromaF./Norms, [], 2);
             fprintf(1, '<td><h2>%i</h2></td>', sum(s' == 1:80));
         end
         fprintf(1, '</tr>\n');

@@ -7,21 +7,6 @@ addpath('SequenceAlignment');
 addpath('SimilarityMatrices');
 addpath('PatchMatch');
 
-DOPATCHMATCH = 0;
-if Kappa == -1
-    DOPATCHMATCH = 1;
-end
-
-%Make directory to hold the results if it doesn't exist
-if DOPATCHMATCH
-    dirName = sprintf('Results/%i_%i_%i_%i_%g', dim, BeatsPerWin, NIters, K, Alpha);
-else
-    dirName = sprintf('Results/%i_%i_%g', dim, BeatsPerWin, Kappa);
-end
-if ~exist(dirName);
-    mkdir(dirName);
-end
-
 %Initialize parameters for matching
 list1 = 'coversongs/covers32k/list1.list';
 list2 = 'coversongs/covers32k/list2.list';
@@ -156,6 +141,6 @@ for batch = 0:3
     end
 end
 
-save(sprintf('%s/%i_%i.mat', dirName, beatIdx1, beatIdx2), ...
+save(outfilename, ...
     'CrossSizes', 'ScoresChroma', 'ScoresMFCC', 'Scores', 'MaxTransp', 'MaxTranspCombined', ...
     'CScoresChroma', 'CScoresMFCC', 'CScores', 'CMaxTransp', 'CMaxTranspCombined');

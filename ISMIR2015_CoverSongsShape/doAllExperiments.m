@@ -28,6 +28,28 @@ Kappa = 0.1;
 %Alpha = 0.05;
 %K = 7;
 
-beatIdx1 = 2;
-beatIdx2 = 2;
-doSingleExperiment;
+
+DOPATCHMATCH = 0;
+if Kappa == -1
+    DOPATCHMATCH = 1;
+end
+
+%Make directory to hold the results if it doesn't exist
+if DOPATCHMATCH
+    dirName = sprintf('Results/%i_%i_%i_%i_%g', dim, BeatsPerWin, NIters, K, Alpha);
+else
+    dirName = sprintf('Results/%i_%i_%g', dim, BeatsPerWin, Kappa);
+end
+if ~exist(dirName);
+    mkdir(dirName);
+end
+
+
+for beatIdx1 = 1:3
+    for beatIdx2 = 1:3
+        outfilename = sprintf('%s/%i_%i.mat', dirName, beatIdx1, beatIdx2);
+        if ~exist(outfilename)
+            doSingleExperiment;
+        end
+    end
+end
