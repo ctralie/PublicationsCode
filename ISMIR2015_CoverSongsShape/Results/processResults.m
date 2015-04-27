@@ -1,33 +1,35 @@
-
+RANK_1 = 1;
+MEDIAN_RANK = 2;
+ResultsType = RANK_1;
 
 %Self-Similarity parameters
-%dim = [100, 200, 300];
-%BeatsPerWin = [8, 10, 12, 14];
-%Kappa = [0.05, 0.1, 0.15];
-
-dim = 200;
-BeatsPerWin = 12;
-Kappa = 0.1;
+dim = [100, 200, 300];
+BeatsPerBlock = [8, 10, 12, 14];
+Kappa = [0.05, 0.1, 0.15];
 
 for k = 1:length(Kappa)
-    fprintf(1, '<h1>Kappa = %g</h1>\n<table border = "1">\n', Kappa(k));
-    fprintf(1, '<tr><td></td>');
-    for b = 1:length(BeatsPerWin)
-        fprintf(1, '<td>BeatsPerWin = %i</td>', BeatsPerWin(b));
+    %fprintf(1, '<h2>Kappa = %g</h2>\n<table border = "1">\n', Kappa(k));
+    fprintf(1, '<table border = "1">\n');
+    fprintf(1, '<tr><td>Kappa = %g</td>', Kappa(k));
+    for b = 1:length(BeatsPerBlock)
+        fprintf(1, '<td>B = %i</td>', BeatsPerBlock(b));
     end
     fprintf(1, '</tr>\n');
     for d = 1:length(dim)
-        fprintf(1, '<tr><td>dim = %i</td>', dim(d));
-        for b = 1:length(BeatsPerWin)
-            dirName = sprintf('%i_%i_%g', dim(d), BeatsPerWin(b), Kappa(k));
+        fprintf(1, '<tr><td>d = %i</td>', dim(d));
+        for b = 1:length(BeatsPerBlock)
+            dirName = sprintf('%i_%i_%g', dim(d), BeatsPerBlock(b), Kappa(k));
             ScoresF = zeros(80, 80);
             ScoresChromaF = zeros(80, 80);
             ScoresMFCCF = zeros(80, 80);
             for beatIdx1 = 1:3
                 for beatIdx2 = 1:3
                     filename = sprintf('%s/%i_%i.mat', dirName, beatIdx1, beatIdx2);
-                    if exist(filename)
+                    if exist(filename) %TODO: Some of the batch tests terminated by hitting memory ceiling
                         load(filename);
+                        ScoresF = max(ScoresF, Scores);
+                        ScoresChromaF = max(ScoresChromaF, ScoresChroma);
+                        ScoresMFCCF = max(ScoresMFCCF, CScoresMFCC);
                         %Compute norm based on CSM sizes
                         Norms = zeros(80, 80);
                         for ii = 1:80
@@ -37,18 +39,24 @@ for k = 1:length(Kappa)
                                 Norms(ii, jj) = 1;
                             end
                         end
-                        Scores = Scores./Norms;
-                        ScoresChroma = ScoresChroma./Norms;
-                        ScoresMFCC = ScoresMFCC./Norms;
-                        
-                        ScoresF = max(ScoresF, Scores);
-                        ScoresChromaF = max(ScoresChromaF, ScoresChroma);
-                        ScoresMFCCF = max(ScoresMFCCF, ScoresMFCC);
+                        ScoresF = ScoresF./Norms;
+                        ScoresChromaF = ScoresChromaF./Norms;
+                        ScoresMFCCF = ScoresMFCCF./Norms;
                     end
                 end
             end
-            [~, s] = max(ScoresChromaF./Norms, [], 2);
-            fprintf(1, '<td><h2>%i</h2></td>', sum(s' == 1:80));
+            ToScore = ScoresMFCCF;
+            if ResultsType == RANK_1
+                [~, s] = max(ToScore, [], 2);
+                fprintf(1, '<td>%i</td>', sum(s' == 1:80));
+            elseif ResultsType == MEDIAN_RANK
+                [~, idx] = sort(ToScore, 2, 'descend');
+                TrueIndices = 1:80;
+                TrueIndices = repmat(TrueIndices(:), [1 80]);
+                idx = (idx == TrueIndices);
+                [~, idx] = max(idx, [], 2);
+                fprintf(1, '<td>%g (%g)</td>', median(idx), mean(idx));
+            end
         end
         fprintf(1, '</tr>\n');
     end
