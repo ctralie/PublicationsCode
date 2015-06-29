@@ -65,7 +65,6 @@ class CrossSimilarityPlot(wx.Panel):
 		self.SetSizer(self.sizer)
 		self.Fit()
 		self.CSM = np.array([])
-		self.Fs = 44100
 		self.songnames = ["", ""]
 		self.SampleDelays = [np.array([]), np.array([])]
 		self.bts = [np.array([]), np.array([])]
@@ -270,7 +269,6 @@ class CrossSimilaritysFrame(wx.Frame):
 		return
 
 if __name__ == "__main__":
-	pygame.init()
 	app = wx.App()
 	frame = CrossSimilaritysFrame(None, -1, 'Cross Similarity GUI')
 	frame.Show(True)

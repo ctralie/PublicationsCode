@@ -1,5 +1,5 @@
 
-~~~~~ octave
+~~~~~ matlab
 %Load in the lists of cover songs in covers80
 list1 = '../coversongs/covers32k/list1.list';
 list2 = '../coversongs/covers32k/list2.list';
