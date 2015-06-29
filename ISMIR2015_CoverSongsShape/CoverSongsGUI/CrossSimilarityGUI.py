@@ -23,14 +23,12 @@ import math
 import time
 
 import pygame
-from threading import Lock
 
 DEFAULT_SIZE = wx.Size(1000, 1000)
 DEFAULT_POS = wx.Point(10, 10)
 SCROLL_RATE = 0.9
 
-scrollLock = Lock()
-
+#Using PyOpenGL to help with automatic updating/threading.  SUPER HACKY!
 class DummyGLCanvas(glcanvas.GLCanvas):
 	def __init__(self, parent, plot):
 		attribs = (glcanvas.WX_GL_RGBA, glcanvas.WX_GL_DOUBLEBUFFER, glcanvas.WX_GL_DEPTH_SIZE, 24)
@@ -66,10 +64,12 @@ class CrossSimilarityPlot(wx.Panel):
 		self.sizer.Add(self.canvas, 1, wx.LEFT | wx.TOP | wx.GROW)
 		self.SetSizer(self.sizer)
 		self.Fit()
-		self.D = np.array([])
+		self.CSM = np.array([])
 		self.Fs = 44100
 		self.songnames = ["", ""]
 		self.SampleDelays = [np.array([]), np.array([])]
+		self.bts = [np.array([]), np.array([])]
+		self.MFCCs = [np.array([[]]), np.array([[]])]
 		self.drawRange = [0, 1, 0, 1]
 		self.drawRadius = 1
 		
@@ -83,38 +83,38 @@ class CrossSimilarityPlot(wx.Panel):
 		self.cid = self.canvas.mpl_connect('button_press_event', self.OnClick)
 		self.canvas.mpl_connect('scroll_event', self.OnScroll)
 		
-	def updateInfo(self, D, Fs, songfilename1, songfilename2, SampleDelays1, SampleDelays2):
-		self.D = D
-		self.drawRange = [0, D.shape[0], 0, D.shape[1]]
+	def updateInfo(self, CSM, Fs, songfilename1, songfilename2, SampleDelays1, SampleDelays2, bts1, bts2, MFCCs1, MFCCs2):
+		self.CSM = CSM
+		self.drawRange = [0, CSM.shape[0], 0, CSM.shape[1]]
 		self.Fs = Fs
 		self.songnames = [songfilename1, songfilename2]
 		self.SampleDelays = [SampleDelays1, SampleDelays2]
+		self.bts = [bts1, bts2]
+		self.MFCCs = [MFCCs1, MFCCs2]
 		self.currSong = 0
 		self.currPos = -1
 		self.startTime = 0
 		pygame.mixer.init(frequency=self.Fs)
 		pygame.mixer.music.load(songfilename1)
-		self.draw()
+		self.draw(True)
 
-	def draw(self):
-		if len(self.D) == 0:
+	def draw(self, firstTime = False):
+		if self.CSM.size == 0:
 			return
-		thisTime = self.startTime + float(pygame.mixer.music.get_pos()) / 1000.0
+		thisTime = self.startTime
+		if self.Playing:
+			thisTime += float(pygame.mixer.music.get_pos()) / 1000.0
 		thisPos = self.currPos
-		while self.SampleDelays[self.currSong][thisPos] < thisTime:
+		while self.bts[self.currSong][thisPos] < thisTime:
 			thisPos = thisPos + 1
-			if thisPos == len(self.SampleDelays[self.currSong]) - 1:
+			if thisPos == len(self.bts[self.currSong]) - 1:
 				break
 		
-		if thisPos != self.currPos:
+		if thisPos != self.currPos or firstTime:
 			self.currPos = thisPos
 			self.axes.clear()
-			imgplot = self.axes.imshow(self.D[self.drawRange[0]:self.drawRange[1], self.drawRange[2]:self.drawRange[3]])
+			imgplot = self.axes.imshow(self.CSM[self.drawRange[0]:self.drawRange[1], self.drawRange[2]:self.drawRange[3]])
 			imgplot.set_interpolation('nearest')
-#			xtimes = self.SampleDelays[1][self.drawRange[2]:self.drawRange[3]]
-#			ytimes = self.SampleDelays[0][self.drawRange[0]:self.drawRange[1]]
-#			self.figure.xticks(xtimes)
-#			self.figure.yticks(ytimes)
 			self.axes.hold(True)
 			#Plot current marker in song
 			if self.currSong == 0:
@@ -128,14 +128,14 @@ class CrossSimilarityPlot(wx.Panel):
 		self.canvas.draw()
 	
 	def OnClick(self, evt):
-		if len(self.D) == 0:
+		if self.CSM.size == 0:
 			return
 		thisSong = 0
 		if evt.button == 1: #TODO: Magic numbers?
 			thisSong = 0
 		elif evt.button == 2:
 			#Reset scrolling to normal
-			self.drawRange = [0, self.D.shape[0], 0, self.D.shape[1]]
+			self.drawRange = [0, self.CSM.shape[0], 0, self.CSM.shape[1]]
 			self.drawRadius = 1
 			self.draw()
 			return
@@ -143,27 +143,20 @@ class CrossSimilarityPlot(wx.Panel):
 			thisSong = 1
 		if not (thisSong == self.currSong):
 			self.currSong = thisSong
-			print "self.Fs = %g"%self.Fs
+			print "\n\nIniting mixer with sampling frequency Fs = %g"%self.Fs
 			pygame.mixer.init(frequency=self.Fs)
 			pygame.mixer.music.load(self.songnames[self.currSong])
 		idx = [0, 0]
 		idx[0] = int(math.floor(evt.ydata)) + self.drawRange[0]
 		idx[1] = int(math.floor(evt.xdata)) + self.drawRange[2]
-		print "Jumping to %g seconds in %s"%(self.SampleDelays[self.currSong][idx[self.currSong]], self.songnames[self.currSong])
-		self.startTime = self.SampleDelays[self.currSong][idx[self.currSong]]
+		print "Jumping to %g seconds in %s"%(self.bts[self.currSong][idx[self.currSong]], self.songnames[self.currSong])
+		self.startTime = self.bts[self.currSong][idx[self.currSong]]
 		pygame.mixer.music.play(0, self.startTime)
+		self.Playing = True
 		self.currPos = idx[self.currSong]
 		self.draw()
 
 	def OnScroll(self, evt):
-#		scrollLock.acquire()
-#		if self.updatingScroll:
-#			print "Already updating scroll"
-#			#Another thread is already updating the scroll
-#			scrollLock.release()
-#			return
-#		self.updatingScroll = True
-#		scrollLock.release()
 		idx = [0, 0]
 		idx[0] = int(math.floor(evt.ydata))
 		idx[1] = int(math.floor(evt.xdata))
@@ -180,27 +173,24 @@ class CrossSimilarityPlot(wx.Panel):
 		selX = idx[1] + self.drawRange[2]
 		selY = idx[0] + self.drawRange[0]
 		#Find new window size
-		dXWin = int(np.round(self.drawRadius*self.D.shape[1]/2.0))
-		dYWin = int(np.round(self.drawRadius*self.D.shape[0]/2.0))
+		dXWin = int(np.round(self.drawRadius*self.CSM.shape[1]/2.0))
+		dYWin = int(np.round(self.drawRadius*self.CSM.shape[0]/2.0))
 		d = [selY - dYWin, selY + dYWin, selX - dXWin, selX + dXWin]
 		d[0] = max(0, d[0])
-		d[1] = min(self.D.shape[0], d[1])
+		d[1] = min(self.CSM.shape[0], d[1])
 		d[2] = max(0, d[2])
-		d[3] = min(self.D.shape[1], d[1])
+		d[3] = min(self.CSM.shape[1], d[1])
 		print d
 		self.drawRange = d
 		self.draw()
-#		scrollLock.acquire()
-#		self.updatingScroll = False
-#		scrollLock.release()
-
+		
 	def OnPlayButton(self, evt):
-		if len(self.SampleDelays[0]) == 0:
+		if len(self.bts[0]) == 0:
 			return
 		self.Playing = True
 		if self.currPos == -1:
 			self.currPos = 0
-		self.startTime = self.SampleDelays[self.currSong][self.currPos]
+		self.startTime = self.bts[self.currSong][self.currPos]
 		pygame.mixer.music.play(0, self.startTime)
 		self.draw()
 	
@@ -257,7 +247,6 @@ class CrossSimilaritysFrame(wx.Frame):
 		self.Show()
 
 	def OnLoadMatrix(self, evt):
-	    #Fields: D, Fs, soundfilename1, soundfilename2, SampleDelays1, SampleDelays2
 		dlg = wx.FileDialog(self, "Choose a file", ".", "", "*", wx.OPEN)
 		if dlg.ShowModal() == wx.ID_OK:
 			filename = dlg.GetFilename()
@@ -265,14 +254,18 @@ class CrossSimilaritysFrame(wx.Frame):
 			print "Loading %s...."%filename
 			filepath = os.path.join(dirname, filename)
 			data = sio.loadmat(filepath)
-			D = data['D']
+			CSM = data['CSM']
 			Fs = data['Fs'].flatten()[0]
 			#The sound files need to be in the same directory
 			songfilename1 = str(data['songfilename1'][0])
 			songfilename2 = str(data['songfilename2'][0])
 			SampleDelays1 = data['SampleDelays1'].flatten()
 			SampleDelays2 = data['SampleDelays2'].flatten()
-			self.CSPlot.updateInfo(D, Fs, songfilename1, songfilename2, SampleDelays1, SampleDelays2)
+			bts1 = data['bts1'].flatten()
+			bts2 = data['bts2'].flatten()
+			MFCCs1 = data['MFCCs1']
+			MFCCs2 = data['MFCCs2']
+			self.CSPlot.updateInfo(CSM, Fs, songfilename1, songfilename2, SampleDelays1, SampleDelays2, bts1, bts2, MFCCs1, MFCCs2)
 		dlg.Destroy()
 		return
 
