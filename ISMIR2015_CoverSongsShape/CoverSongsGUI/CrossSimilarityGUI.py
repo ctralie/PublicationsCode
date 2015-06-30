@@ -53,7 +53,8 @@ class DummyGLCanvas(glcanvas.GLCanvas):
         time.sleep(0.2)
         self.plot.draw()
         self.SwapBuffers()
-        self.Refresh()
+        if self.plot.Playing:
+            self.Refresh()
 
 class CrossSimilarityPlot(wx.Panel):
     def __init__(self, parent):
@@ -178,6 +179,7 @@ class CrossSimilarityPlot(wx.Panel):
         self.startTime = self.bts[self.currSong][idx[self.currSong]]
         pygame.mixer.music.play(0, self.startTime)
         self.Playing = True
+        self.dummyCanvas.Refresh()
         self.currPos = idx[self.currSong]
         self.draw()
 
@@ -259,8 +261,9 @@ class CrossSimilaritysFrame(wx.Frame):
         buttonRow.Add(playButton, 0, wx.EXPAND)
         buttonRow.Add(pauseButton, 0, wx.EXPAND)        
 
-        #self.glcanvas = DummyGLCanvas(self, self.CSPlot)
-        #self.glcanvas.Refresh()
+        self.glcanvas = DummyGLCanvas(self, self.CSPlot)
+        self.CSPlot.dummyCanvas = self.glcanvas
+        self.glcanvas.Refresh()
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.sizer.Add(buttonRow, 0, wx.EXPAND)

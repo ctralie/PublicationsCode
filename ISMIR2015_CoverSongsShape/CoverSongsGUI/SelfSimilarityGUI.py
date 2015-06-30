@@ -27,7 +27,7 @@ from CoverSongInfo import *
 
 import pygame
 
-DEFAULT_SIZE = wx.Size(1200, 800)
+DEFAULT_SIZE = wx.Size(800, 800)
 DEFAULT_POS = wx.Point(10, 10)
 
 class SelfSimilarityPlot(wx.Panel):
@@ -98,7 +98,7 @@ class LoopDittyCanvas(glcanvas.GLCanvas):
         self.YColorsVBO = vbo.VBO(np.array(self.coverSong.YColors, dtype='float32'))
         
         #Point cloud and playing information
-        self.DrawEdges = False
+        self.DrawEdges = True
         self.Playing = False
         
         self.GLinitialized = False
@@ -275,42 +275,31 @@ class CoverSongsFrame(wx.Frame):
         self.size = size
         self.pos = pos
         
-        rows = []
-        #Play button for song 1
-        row = wx.BoxSizer(wx.HORIZONTAL)
-        playButton1 = wx.Button(self, label = 'PLAY')
-        row.Add(playButton1)
-        playButton1.Bind(wx.EVT_BUTTON, self.OnPlayButton1)
-        rows.append(row)
         
         #Curve and self-similarity row for song 1
-        row = wx.BoxSizer(wx.HORIZONTAL)
+        gridSizer = wx.GridSizer(2, 2, 5, 5)
         self.SSM1Canvas = SelfSimilarityPlot(self, cover1Info)        
         self.curve1Canvas = LoopDittyCanvas(self, cover1Info, self.SSM1Canvas)
-        row.Add(self.curve1Canvas, 1, wx.LEFT | wx.GROW)
-        row.Add(self.SSM1Canvas, 1, wx.LEFT)
-        rows.append(row)
-        
-        #Play button for song 2
-        row = wx.BoxSizer(wx.HORIZONTAL)
-        playButton2 = wx.Button(self, label = 'PLAY')
-        row.Add(playButton2)
-        playButton2.Bind(wx.EVT_BUTTON, self.OnPlayButton2)
-        rows.append(row)
+        gridSizer.Add(self.curve1Canvas, 1, wx.EXPAND)
+        gridSizer.Add(self.SSM1Canvas, 1, wx.EXPAND)
         
         #Curve and self-similarity row for song 2
-        row = wx.BoxSizer(wx.HORIZONTAL)
         self.SSM2Canvas = SelfSimilarityPlot(self, cover2Info)        
         self.curve2Canvas = LoopDittyCanvas(self, cover2Info, self.SSM2Canvas)
-        row.Add(self.curve2Canvas, 1, wx.LEFT | wx.GROW)
-        row.Add(self.SSM2Canvas, 1, wx.LEFT)
-        rows.append(row)
+        gridSizer.Add(self.curve2Canvas, 1, wx.EXPAND)
+        gridSizer.Add(self.SSM2Canvas, 1, wx.EXPAND)
         
-        #Add everything to a vertical box sizer    
-        self.sizer = wx.BoxSizer(wx.VERTICAL)
-        for row in rows:
-            self.sizer.Add(row, 0, wx.EXPAND)
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(gridSizer, 1, wx.EXPAND | wx.GROW)
+        buttonsRow = wx.BoxSizer(wx.HORIZONTAL)
+        playButton1 = wx.Button(self, label = "Play %s"%cover1Info.title)
+        buttonsRow.Add(playButton1)
+        playButton1.Bind(wx.EVT_BUTTON, self.OnPlayButton1)
+        playButton2 = wx.Button(self, label = 'Play %s'%cover2Info.title)
+        buttonsRow.Add(playButton2)
+        playButton2.Bind(wx.EVT_BUTTON, self.OnPlayButton2)
+        sizer.Add(buttonsRow)
         
-        self.SetSizer(self.sizer)
+        self.SetSizer(sizer)
         self.Layout()
         self.Show()

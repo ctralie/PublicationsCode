@@ -45,9 +45,8 @@ class CoverSongInfo(object):
         self.BeatStartIdx = np.zeros(N)
         cmConvert = cm.get_cmap('jet')
         print "Doing PCA on all windows..."
-        P0 = MFCCs[beatIdx[0]:beatIdx[1], :]
-        (self.Y, varExplained) = doCenteringAndPCA(P0)
-        self.YColors = cmConvert(np.linspace(0, 1, self.Y.shape[0]))[:, 0:3]
+        self.Y = np.zeros((0, 3))
+        self.YColors = np.zeros((0, 3))
         
         for i in range(N):
             P = MFCCs[beatIdx[i]:beatIdx[i+BeatsPerWin]]
@@ -58,7 +57,7 @@ class CoverSongInfo(object):
             self.Y = np.concatenate((self.Y, Yi), 0)
             Colorsi = cmConvert(np.linspace(0, 1, P.shape[0]))[:, 0:3]
             self.YColors = np.concatenate((self.YColors, Colorsi), 0)
-            self.BeatStartIdx[i] = self.BeatStartIdx[i-1] + Colorsi.shape[0]
+            self.BeatStartIdx[i+1] = self.BeatStartIdx[i] + Colorsi.shape[0]
         self.BeatStartIdx = self.BeatStartIdx[0:N]
         print "Finished PCA on %i windows for %s"%(N, self.title)
         
