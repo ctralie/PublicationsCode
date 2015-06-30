@@ -3,6 +3,7 @@ from wx import glcanvas
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from OpenGL.GLUT import *
+from OpenGL.arrays import vbo
 
 from sys import exit, argv
 import numpy as np
@@ -38,6 +39,7 @@ class SelfSimilarityPlot(wx.Panel):
         self.FigDMat = self.figure.add_subplot(111)
         
         self.currBeat = self.coverSong.currBeat
+        self.D = np.zeros((50, 50))
         self.updateD()
         
         self.canvas = FigureCanvas(self, -1, self.figure)
@@ -51,12 +53,13 @@ class SelfSimilarityPlot(wx.Panel):
         #Compute self-similarity image
         idxstart = self.coverSong.BeatStartIdx[self.currBeat]
         idxend = 0
-        if idxstart < len(self.coverSong.BeatStartIdx) - 1:
+        if self.currBeat < len(self.coverSong.BeatStartIdx) - 1:
             idxend = self.coverSong.BeatStartIdx[self.currBeat+1]
         else:
             idxend = self.coverSong.Y.shape[0]
         Y = self.coverSong.Y[idxstart:idxend, :]
         dotY = np.reshape(np.sum(Y*Y, 1), (Y.shape[0], 1))
+        print "Y.shape = ", Y.shape
         self.D = (dotY + dotY.T) - 2*(np.dot(Y, Y.T))
 
     def draw(self):
@@ -68,14 +71,14 @@ class SelfSimilarityPlot(wx.Panel):
             
         self.FigDMat.imshow(self.D, cmap=matplotlib.cm.jet)
         self.FigDMat.hold(True)
-        self.FigDMat.set_title('Euclidean Distance Matrix')
+        self.FigDMat.set_title("SSM %s"%self.coverSong.title)
         #TODO: Plot moving horizontal line 
         self.canvas.draw()
 
 class LoopDittyCanvas(glcanvas.GLCanvas):
-    def __init__(self,  coverSong, SSMPlot):
+    def __init__(self, parent, coverSong, SSMPlot):
         attribs = (glcanvas.WX_GL_RGBA, glcanvas.WX_GL_DOUBLEBUFFER, glcanvas.WX_GL_DEPTH_SIZE, 24)
-        glcanvas.GLCanvas.__init__(self, -1, attribList = attribs)    
+        glcanvas.GLCanvas.__init__(self, parent, -1, attribList = attribs)    
         self.context = glcanvas.GLContext(self)
         
         self.coverSong = coverSong
@@ -95,7 +98,8 @@ class LoopDittyCanvas(glcanvas.GLCanvas):
         self.YColorsVBO = vbo.VBO(np.array(self.coverSong.YColors, dtype='float32'))
         
         #Point cloud and playing information
-        self.DrawEdges = True
+        self.DrawEdges = False
+        self.Playing = False
         
         self.GLinitialized = False
         #GL-related events
@@ -151,7 +155,7 @@ class LoopDittyCanvas(glcanvas.GLCanvas):
         glColor3f(1, 0, 0)
         glPointSize(3)
 
-        StartPoint = self.coverSong.BeatStartIdx[self.coverSong.currBeat]
+        StartPoint = int(self.coverSong.BeatStartIdx[self.coverSong.currBeat])
         #Find endpoint based on how long sound has been playing
         startTime = self.coverSong.SampleDelays[self.coverSong.beatIdx[self.coverSong.currBeat]] 
         EndTime = startTime + float(pygame.mixer.music.get_pos()) / 1000.0
@@ -161,35 +165,39 @@ class LoopDittyCanvas(glcanvas.GLCanvas):
             N = self.coverSong.BeatStartIdx[self.coverSong.currBeat+1] - self.coverSong.BeatStartIdx[self.coverSong.currBeat]
         else:
             N = len(self.coverSong.SampleDelays) - self.coverSong.BeatStartIdx[self.coverSong.currBeat]
-        i = 0
-        while self.coverSong.SampleDelays[self.coverSong.beatIdx[self.coverSong.currBeat] + i] < EndTime:
-            i = i+1
-            EndPoint = EndPoint + 1
-            if i >= N - 1:
-                pygame.mixer.music.stop()
-                break
-            else:
-                self.Refresh()
+        N = int(N)
+        if self.Playing:
+            i = 0
+            while self.coverSong.SampleDelays[self.coverSong.beatIdx[self.coverSong.currBeat] + i] < EndTime:
+                i = i+1
+                EndPoint = EndPoint + 1
+                if i >= N - 1:
+                    pygame.mixer.music.stop()
+                    self.Playing = False
+                    break
+            self.Refresh()
+        else:
+            EndPoint = StartPoint + N
         
         self.YVBO.bind()
         glEnableClientState(GL_VERTEX_ARRAY)
         glVertexPointerf( self.YVBO )
         
-        self.selectedCover.YColorsVBO.bind()
+        self.YColorsVBO.bind()
         glEnableClientState(GL_COLOR_ARRAY)
-        glColorPointer(3, GL_FLOAT, 0, self.selectedCover.YColorsVBO)
+        glColorPointer(3, GL_FLOAT, 0, self.YColorsVBO)
         
         if self.DrawEdges:
             glDrawArrays(GL_LINES, StartPoint, EndPoint - StartPoint)
             glDrawArrays(GL_LINES, StartPoint+1, EndPoint - StartPoint)
         glDrawArrays(GL_POINTS, StartPoint, EndPoint - StartPoint + 1)
-        self.selectedCover.YVBO.unbind()
-        self.selectedCover.YColorsVBO.unbind()
+        self.YVBO.unbind()
+        self.YColorsVBO.unbind()
         glDisableClientState(GL_VERTEX_ARRAY)
         glDisableClientState(GL_COLOR_ARRAY)
         
         self.SwapBuffers()
-        self.SSMPlot.draw()
+        #self.SSMPlot.draw()
     
     def initGL(self):        
         glutInit('')
@@ -234,14 +242,18 @@ class CoverSongsFrame(wx.Frame):
         C = self.cover1Info
         startTime = C.SampleDelays[C.beatIdx[C.currBeat]] 
         pygame.mixer.music.load(C.songfilename)
-        pygame.mixer.music.play(0, self.startTime)
+        pygame.mixer.music.play(0, startTime)
+        self.curve1Canvas.Playing = True
+        self.curve2Canvas.Playing = False
         self.curve1Canvas.Refresh()
 
     def OnPlayButton2(self, evt):
         C = self.cover2Info
         startTime = C.SampleDelays[C.beatIdx[C.currBeat]] 
         pygame.mixer.music.load(C.songfilename)
-        pygame.mixer.music.play(0, self.startTime)
+        pygame.mixer.music.play(0, startTime)
+        self.curve2Canvas.Playing = True
+        self.curve1Canvas.Playing = False
         self.curve2Canvas.Refresh()
 
     def __init__(self, parent, id, title, cover1Info, cover2Info, CSM, idx, pos=DEFAULT_POS, size=DEFAULT_SIZE, style=wx.DEFAULT_FRAME_STYLE, name = 'GLWindow'):
@@ -274,7 +286,7 @@ class CoverSongsFrame(wx.Frame):
         #Curve and self-similarity row for song 1
         row = wx.BoxSizer(wx.HORIZONTAL)
         self.SSM1Canvas = SelfSimilarityPlot(self, cover1Info)        
-        self.curve1Canvas = LoopDittyFrame(cover1Info, self.SSM1Canvas)
+        self.curve1Canvas = LoopDittyCanvas(self, cover1Info, self.SSM1Canvas)
         row.Add(self.curve1Canvas, 1, wx.LEFT | wx.GROW)
         row.Add(self.SSM1Canvas, 1, wx.LEFT)
         rows.append(row)
@@ -289,7 +301,7 @@ class CoverSongsFrame(wx.Frame):
         #Curve and self-similarity row for song 2
         row = wx.BoxSizer(wx.HORIZONTAL)
         self.SSM2Canvas = SelfSimilarityPlot(self, cover2Info)        
-        self.curve2Canvas = LoopDittyFrame(cover2Info, self.SSM2Canvas)
+        self.curve2Canvas = LoopDittyCanvas(self, cover2Info, self.SSM2Canvas)
         row.Add(self.curve2Canvas, 1, wx.LEFT | wx.GROW)
         row.Add(self.SSM2Canvas, 1, wx.LEFT)
         rows.append(row)

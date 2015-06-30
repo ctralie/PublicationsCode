@@ -32,6 +32,7 @@ class CoverSongInfo(object):
         self.songfilename = songfilename
         self.title = songfilename.split('.mp3')[0]
         self.title = self.title.split('/')[-1]
+        self.title = self.title.split('+')[0]
         self.SampleDelays = SampleDelays
         self.MFCCs = MFCCs
         self.BeatsPerWin = BeatsPerWin

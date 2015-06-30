@@ -151,7 +151,8 @@ class CrossSimilarityPlot(wx.Panel):
             frame = CoverSongsFrame(None, -1, 'Cover Songs GUI', self.cover1Info, self.cover2Info, self.CSM, idx)
             frame.Show(True)
             app.MainLoop()
-            app.Destroy()            
+            app.Destroy()
+            return  
         if self.CSM.size == 0:
             return
         thisSong = 0
@@ -258,8 +259,8 @@ class CrossSimilaritysFrame(wx.Frame):
         buttonRow.Add(playButton, 0, wx.EXPAND)
         buttonRow.Add(pauseButton, 0, wx.EXPAND)        
 
-        self.glcanvas = DummyGLCanvas(self, self.CSPlot)
-        self.glcanvas.Refresh()
+        #self.glcanvas = DummyGLCanvas(self, self.CSPlot)
+        #self.glcanvas.Refresh()
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.sizer.Add(buttonRow, 0, wx.EXPAND)
