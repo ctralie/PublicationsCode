@@ -14,17 +14,18 @@ function [] = prepareSongForGUI( filenameout, filePrefix1, filePrefix2, beatIdx1
     bts1 = song1.allbts{beatIdx1};
     MFCCs1 = song1.allMFCC{beatIdx1};
     fprintf(1, 'Computing self-similarity matrices for %s...\n', filePrefix1);
-    Ds1 = getBeatSyncDistanceMatrices(MFCCs1, SampleDelays1, bts1, dim, BeatsPerWin);
+    [Ds1, beatIdx1] = getBeatSyncDistanceMatrices(MFCCs1, SampleDelays1, bts1, dim, BeatsPerWin);
     
     SampleDelays2 = song2.allSampleDelaysMFCC{beatIdx2};
     bts2 = song2.allbts{beatIdx2};
     MFCCs2 = song2.allMFCC{beatIdx2};
     fprintf(1, 'Computing self-similarity matrices for %s...\n', filePrefix2);
-    Ds2 = getBeatSyncDistanceMatrices(MFCCs2, SampleDelays2, bts2, dim, BeatsPerWin);
+    [Ds2, beatIdx2] = getBeatSyncDistanceMatrices(MFCCs2, SampleDelays2, bts2, dim, BeatsPerWin);
     
     CSM = bsxfun(@plus, dot(Ds1, Ds1, 2), dot(Ds2, Ds2, 2)') - 2*(Ds1*Ds2');
     D = CSM; %Backwards compatibility
     save(filenameout, 'CSM', 'D', 'songfilename1', 'SampleDelays1', 'bts1', 'MFCCs1', ...
-        'songfilename2', 'SampleDelays2', 'bts2', 'MFCCs2', 'dim', 'BeatsPerWin', 'Fs');
+        'songfilename2', 'SampleDelays2', 'bts2', 'MFCCs2', 'dim', 'BeatsPerWin', 'Fs', ...
+        'beatIdx1', 'beatIdx2');
 end
 
