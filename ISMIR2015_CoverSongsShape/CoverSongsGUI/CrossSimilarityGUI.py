@@ -258,8 +258,8 @@ class CrossSimilaritysFrame(wx.Frame):
         playButton.Bind(wx.EVT_BUTTON, self.CSPlot.OnPlayButton)
         pauseButton = wx.Button(self, label = 'PAUSE')
         pauseButton.Bind(wx.EVT_BUTTON, self.CSPlot.OnPauseButton)
-        buttonRow.Add(playButton, 0, wx.EXPAND)
-        buttonRow.Add(pauseButton, 0, wx.EXPAND)        
+        buttonRow.Add(playButton, 0, wx.EXPAND | wx.GROW)
+        buttonRow.Add(pauseButton, 0, wx.EXPAND | wx.GROW)        
 
         self.glcanvas = DummyGLCanvas(self, self.CSPlot)
         self.CSPlot.dummyCanvas = self.glcanvas
