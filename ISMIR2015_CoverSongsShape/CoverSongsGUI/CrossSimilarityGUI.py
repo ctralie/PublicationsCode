@@ -24,6 +24,7 @@ import time
 
 import pygame
 from CoverSongInfo import *
+from SelfSimilarityGUI import *
 
 DEFAULT_SIZE = wx.Size(1000, 1000)
 DEFAULT_POS = wx.Point(10, 10)
@@ -135,9 +136,13 @@ class CrossSimilarityPlot(wx.Panel):
     
     def OnClick(self, evt):
         if evt.dblclick:
+            self.Playing = False
+            pygame.mixer.music.stop()
             idx = [0, 0]
             idx[0] = int(math.floor(evt.ydata)) + self.drawRange[0]
             idx[1] = int(math.floor(evt.xdata)) + self.drawRange[2]
+            #Precompute PCA on all beat blocks (may take a few seconds the first time
+            #but all subsequent times it will be faster)
             if not self.cover1Info:
                 self.cover1Info = CoverSongInfo(self.songnames[0], self.MFCCs[0], self.SampleDelays[0], self.beatIdxs[0], self.BeatsPerWin)
             if not self.cover2Info:

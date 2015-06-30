@@ -1,11 +1,13 @@
 import wx
+from wx import glcanvas
+from OpenGL.GL import *
+from OpenGL.GLU import *
+from OpenGL.GLUT import *
 
 from sys import exit, argv
 import numpy as np
 import scipy.io as sio
 from scipy.io import wavfile
-import scipy.spatial as spatial
-import scipy.linalg
 from pylab import cm
 import os
 import math
@@ -13,7 +15,6 @@ import time
 
 from Cameras3D import *
 
-import scipy.spatial.distance as distance
 import matplotlib
 matplotlib.use('WXAgg')
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
@@ -47,13 +48,16 @@ class SelfSimilarityPlot(wx.Panel):
         self.draw()
 
     def updateD(self):
-        idxstart = coverSong.BeatStartIdx[self.currBeat]
+        #Compute self-similarity image
+        idxstart = self.coverSong.BeatStartIdx[self.currBeat]
         idxend = 0
-        if idxstart < len(coverSong.BeatStartIdx) - 1:
-            idxend = coverSong.BeatStartIdx[self.currBeat+1]
+        if idxstart < len(self.coverSong.BeatStartIdx) - 1:
+            idxend = self.coverSong.BeatStartIdx[self.currBeat+1]
         else:
-            idxend = coverSong.Y.shape[0]
-        self.D = distance.squareform(distance.pdist(self.coverSong.Y[idxstart:idxend, :]))    
+            idxend = self.coverSong.Y.shape[0]
+        Y = self.coverSong.Y[idxstart:idxend, :]
+        dotY = np.reshape(np.sum(Y*Y, 1), (Y.shape[0], 1))
+        self.D = (dotY + dotY.T) - 2*(np.dot(Y, Y.T))
 
     def draw(self):
         if self.coverSong.currBeat >= len(self.coverSong.SampleDelays):
@@ -66,7 +70,7 @@ class SelfSimilarityPlot(wx.Panel):
         self.FigDMat.hold(True)
         self.FigDMat.set_title('Euclidean Distance Matrix')
         #TODO: Plot moving horizontal line 
-    self.canvas.draw()
+        self.canvas.draw()
 
 class LoopDittyCanvas(glcanvas.GLCanvas):
     def __init__(self,  coverSong, SSMPlot):
@@ -263,7 +267,7 @@ class CoverSongsFrame(wx.Frame):
         #Play button for song 1
         row = wx.BoxSizer(wx.HORIZONTAL)
         playButton1 = wx.Button(self, label = 'PLAY')
-        row.add(playButton1)
+        row.Add(playButton1)
         playButton1.Bind(wx.EVT_BUTTON, self.OnPlayButton1)
         rows.append(row)
         
@@ -278,7 +282,7 @@ class CoverSongsFrame(wx.Frame):
         #Play button for song 2
         row = wx.BoxSizer(wx.HORIZONTAL)
         playButton2 = wx.Button(self, label = 'PLAY')
-        row.add(playButton2)
+        row.Add(playButton2)
         playButton2.Bind(wx.EVT_BUTTON, self.OnPlayButton2)
         rows.append(row)
         

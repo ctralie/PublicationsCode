@@ -50,12 +50,16 @@ class CoverSongInfo(object):
         
         for i in range(N):
             P = MFCCs[beatIdx[i]:beatIdx[i+BeatsPerWin]]
+            if P.size == 0:
+                N = i
+                break
             (Yi, varExplained) = doCenteringAndPCA(P)
             self.Y = np.concatenate((self.Y, Yi), 0)
             Colorsi = cmConvert(np.linspace(0, 1, P.shape[0]))[:, 0:3]
             self.YColors = np.concatenate((self.YColors, Colorsi), 0)
             self.BeatStartIdx[i] = self.BeatStartIdx[i-1] + Colorsi.shape[0]
-        print "Finished PCA"
+        self.BeatStartIdx = self.BeatStartIdx[0:N]
+        print "Finished PCA on %i windows for %s"%(N, self.title)
         
         self.currBeat = 0
         
