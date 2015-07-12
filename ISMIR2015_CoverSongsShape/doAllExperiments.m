@@ -4,6 +4,6 @@ mex swalignimp.cpp;
 mex swalignimpconstrained.cpp;
 cd('..');
 
-for ExperimentIdx = 1:length(dim)*length(BeatsPerBlock)*length(Kappa)*3*3
+for ExperimentIdx = 1:length(dim)*length(BeatsPerBlock)*length(Kappa)*length(beatIdxs1)*length(beatIdxs2)
     doBatchExperiment;
 end

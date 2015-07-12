@@ -22,8 +22,8 @@ Below is a list of instructions to replicate the results reported in the paper
 dim = 200; %Resized dimension of self-similarity matrices
 BeatsPerBlock = 12; %Number of beats per block
 Kappa = 0.1; %Fraction of mutual nearest neighbors to take when converting a cross-similarity matrix to a binary cross-similarity matrix
-beatIdx1 = 1:3;%Tempo levels to try for the first song (1: 60bpm bias, 2: 120bmp bias, 3:180bmp bias)
-beatIdx2 = 1:3;%Tempo levels to try for the second song
+beatIdxs1 = 1:3;%Tempo levels to try for the first song (1: 60bpm bias, 2: 120bmp bias, 3:180bmp bias)
+beatIdxs2 = 1:3;%Tempo levels to try for the second song
 
 doAllExperiments;
 ~~~~~
