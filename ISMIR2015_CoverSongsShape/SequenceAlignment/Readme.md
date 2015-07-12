@@ -1,0 +1,1 @@
+This folder houses code to compute Smith Waterman quickly in C++.  This code should be automatically compiled to into .mex* binary format when following the other steps to run the batch tests.  If this fails, you may need to run mex -setup in Matlab to configure your mex compiler

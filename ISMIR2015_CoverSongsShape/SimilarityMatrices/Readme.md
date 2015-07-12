@@ -1,0 +1,1 @@
+Code for quickly computing self-similarity matrices for all of the blocks in a song by leveraging Matlab's fast matrix multiplication routines.  getBeatSyncDistanceMatrices.m is the CPU version (called by default) and getBeatSyncSSM.m is the GPU version (requires CUDA)

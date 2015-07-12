@@ -2,10 +2,10 @@ This folder contains a Python library that is used to interactively view the cro
 
 ##Dependencies:
 There are a number of Python libraries that need to be installed in order to run this GUI.  They are as follows:
-*Numpy/Scipy/Matplotlib
-*PyOpenGL (for interactively viewing PCA of blocks)
-*wxPython (for the GUI Interface)
-*PyGame (for playing back synchronized sound)
+* Numpy/Scipy/Matplotlib
+* PyOpenGL (for interactively viewing PCA of blocks)
+* wxPython (for the GUI Interface)
+* PyGame (for playing back synchronized sound)
 
 ##Setting up and running an example
 To view the cross-similarity and self-similarity matrices for a pair of songs in covers80, it is first necessary to run some code in Matlab to extract information and make it available to Python.  The code below show an example of how to do this.  

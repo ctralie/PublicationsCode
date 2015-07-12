@@ -1,4 +1,4 @@
-Ensure that the "rastamat" library for computing MFCC is downloaded and extracted to this directory
+This folder contains code to precompute beat-synchronous MFCC and Chroma features.  Ensure that the "rastamat" library for computing MFCC is downloaded and extracted to this directory
 
 http://labrosa.ee.columbia.edu/matlab/rastamat/
 

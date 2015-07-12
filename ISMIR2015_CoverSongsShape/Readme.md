@@ -14,7 +14,7 @@ Below is a list of instructions to replicate the results reported in the paper
 
 1. Download the <a href = "http://labrosa.ee.columbia.edu/projects/coversongs/covers80/">"covers 80"</a> benchmark dataset (<a href = "http://labrosa.ee.columbia.edu/projects/coversongs/covers80/covers80.tgz">covers80.tgz</a>) and extract to the root of this directory.  When this is done, you should have a folder "coversongs" at the root of this directory which contains two folders: "covers32k" and "src"
 2. Download the <a href = "http://labrosa.ee.columbia.edu/matlab/rastamat/rastamat.tgz">rastamat</a> library for computing MFCC features and extract to the <b>BeatSyncFeatures</b> directory
-2. Run the Matlab file "getAllTempoEmbedding.m" in <b>BeatSyncFeatures/</b> to precompute all MFCC and Chroma features.  This may take a while the first time
+2. Run the Matlab file "getAllTempoEmbedding.m" in <b>BeatSyncFeatures/</b> to precompute all MFCC and Chroma features.  This may take a while the first time.  If it fails because your version of Matlab cannot read .mp3 files, you can convert them to .ogg format with the file "convertMp3sToOggs.py" found in coversongs/
 3. Choose a set of parameters and loop through all combinations of these parameters in a series of batch tests.  Each parameter is described more in the paper.  Run the following Matlab code at the root of this directory to perform experiments on the covers80 dataset
 
 ~~~~~ matlab
@@ -51,7 +51,7 @@ Below is a description of the code in each directory in this repository
 
 * PatchMatch: Code for computing cross-similarity matrices and for performing Patch Match (Patch Match results not reported in paper)
 
-* Results: Code for processing the results of a batch tests
+* Results: Directory used for storing processing the results of a batch tests
 
 * SequenceAlignment: C++ implementations of Smith Waterman and constrained Smith Waterman, which have MEX interfaces so they can be called from Matlab
 

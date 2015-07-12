@@ -1,0 +1,1 @@
+The <a href = "http://labrosa.ee.columbia.edu/projects/coversongs/covers80/covers80.tgz">covers80.tgz</a> file with the "Covers 80" benchmark dataset should be extracted here.  If your version of Matlab cannot read .mp3 files, then run the Python file "convertMp3sToOggs.py," whic requires <a href = "http://sourceforge.net/projects/avconv/">avconv</a>.

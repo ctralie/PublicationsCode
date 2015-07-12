@@ -2,11 +2,6 @@ RANK_1 = 1;
 MEDIAN_RANK = 2;
 ResultsType = RANK_1;
 
-%Self-Similarity parameters
-dim = [100, 200, 300];
-BeatsPerBlock = [8, 10, 12, 14];
-Kappa = [0.05, 0.1, 0.15];
-
 for k = 1:length(Kappa)
     %fprintf(1, '<h2>Kappa = %g</h2>\n<table border = "1">\n', Kappa(k));
     fprintf(1, '<table border = "1">\n');
@@ -22,8 +17,8 @@ for k = 1:length(Kappa)
             ScoresF = zeros(80, 80);
             ScoresChromaF = zeros(80, 80);
             ScoresMFCCF = zeros(80, 80);
-            for beatIdx1 = 1:3
-                for beatIdx2 = 1:3
+            for beatIdx1 = beatIdxs
+                for beatIdx2 = beatIdxs
                     filename = sprintf('%s/%i_%i.mat', dirName, beatIdx1, beatIdx2);
                     if exist(filename) %TODO: Some of the batch tests terminated by hitting memory ceiling
                         load(filename);
