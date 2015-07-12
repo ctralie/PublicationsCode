@@ -10,11 +10,11 @@ Most of the code is written in Matlab to take advantage of fast matrix multiplic
 #Getting Started and Running Experiments
 Below is a list of instructions to replicate the results reported in the paper
 
-<ol>
-<li>Download the <a href = "http://labrosa.ee.columbia.edu/projects/coversongs/covers80/">"covers 80"</a> benchmark dataset (<a href = "http://labrosa.ee.columbia.edu/projects/coversongs/covers80/covers80.tgz">covers80.tgz</a>) and extract to the root of this directory.  When this is done, you should have a folder "coversongs" at the root of this directory which contains two folders: "covers32k" and "src"</li>
-<li>Download the <a href = "http://labrosa.ee.columbia.edu/matlab/rastamat/">rastamat</a> library for computing MFCC features and extract to the <b>BeatSyncFeatures</b> directory</li>
-<li>Run the Matlab file "getAllTempoEmbedding.m" in <b>BeatSyncFeatures/</b> to precompute all MFCC and Chroma features.  This may take a while the first time</li>
-<li>Choose a set of parameters to loop through in a sequence of batch tests.  Each parameter is described more in the paper.  Run the following Matlab code at the root of this directory to perform experiments on the covers80 dataset
+
+1. Download the <a href = "http://labrosa.ee.columbia.edu/projects/coversongs/covers80/">"covers 80"</a> benchmark dataset (<a href = "http://labrosa.ee.columbia.edu/projects/coversongs/covers80/covers80.tgz">covers80.tgz</a>) and extract to the root of this directory.  When this is done, you should have a folder "coversongs" at the root of this directory which contains two folders: "covers32k" and "src"
+2. Download the <a href = "http://labrosa.ee.columbia.edu/matlab/rastamat/">rastamat</a> library for computing MFCC features and extract to the <b>BeatSyncFeatures</b> directory
+2. Run the Matlab file "getAllTempoEmbedding.m" in <b>BeatSyncFeatures/</b> to precompute all MFCC and Chroma features.  This may take a while the first time
+3. Choose a set of parameters to loop through in a sequence of batch tests.  Each parameter is described more in the paper.  Run the following Matlab code at the root of this directory to perform experiments on the covers80 dataset
 
 ~~~~~ matlab
 %Parameters to try
@@ -34,13 +34,6 @@ dim = [100, 200, 300];
 
 The script will try all combinations of parameters that are specified.  
 <b>NOTE:</b> If you have access to a cluster computer with the SLURM system, you can parallelize the different parameter choices by modifying and running the script "doBatchExperiments.q"
-</li>
-
-<li>
-
-</li>
-
-</ol>
 
 
 
