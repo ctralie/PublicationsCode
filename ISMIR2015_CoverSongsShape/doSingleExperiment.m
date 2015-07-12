@@ -1,7 +1,7 @@
 %Perform an experiment on covers80
 %for a particular choice of beatIdx1 and beatIdx2 for the tempos in the
 %first group and the tempos in the second group, as well as the parameters
-%NIters, K, and Alpha for PatchMatch and dim, BeatsPerWin
+%NIters, K, and Alpha for PatchMatch and dim, BeatsPerBlock
 addpath('BeatSyncFeatures');
 addpath('SequenceAlignment');
 addpath('SimilarityMatrices');
@@ -19,7 +19,7 @@ N = length(files1);
 fprintf(1, '\n\n\n');
 disp('======================================================');
 fprintf(1, 'RUNNING EXPERIMENTS\n');
-fprintf(1, 'dim = %i, BeatsPerWin = %i\n', dim, BeatsPerWin);
+fprintf(1, 'dim = %i, BeatsPerBlock = %i\n', dim, BeatsPerBlock);
 if DOPATCHMATCH
     fprintf(1, 'PatchMatch K = %i, NIters = %i, Alpha = %g\n', K, NIters, Alpha);
 else
@@ -62,7 +62,7 @@ for batch = 0:3
         song = load(['BeatSyncFeatures', filesep, files1{ii+batch*N/4}, '.mat']);
         fprintf(1, 'Getting self-similarity matrices for %s\n', files1{ii+batch*N/4});
         DsOrig{ii} = single(getBeatSyncDistanceMatrices(song.allMFCC{beatIdx1}, ...
-            song.allSampleDelaysMFCC{beatIdx1}, song.allbts{beatIdx1}, dim, BeatsPerWin));
+            song.allSampleDelaysMFCC{beatIdx1}, song.allbts{beatIdx1}, dim, BeatsPerBlock));
         ChromasOrig{ii} = song.allBeatSyncChroma{beatIdx1};
         toc;
     end
@@ -74,7 +74,7 @@ for batch = 0:3
         song = load(['BeatSyncFeatures', filesep, files2{jj}, '.mat']);
         fprintf(1, 'Getting self-similarity matrices for %s\n', files2{jj});
         thisDs = single(getBeatSyncDistanceMatrices(song.allMFCC{beatIdx2}, ...
-            song.allSampleDelaysMFCC{beatIdx2}, song.allbts{beatIdx2}, dim, BeatsPerWin));
+            song.allSampleDelaysMFCC{beatIdx2}, song.allbts{beatIdx2}, dim, BeatsPerBlock));
         ChromaY = song.allBeatSyncChroma{beatIdx2};
 
         thisMsMFCC = cell(N, 1);
@@ -95,18 +95,19 @@ for batch = 0:3
 
             %Step 2: Compute transposed chroma delay features
             ChromaX = ChromasOrig{ii};
-            ChromaX = getBeatSyncChromaDelay(ChromaX, BeatsPerWin, 0);
+            ChromaX = getBeatSyncChromaDelay(ChromaX, BeatsPerBlock, 0);
             allScoresChroma = zeros(1, size(ChromaY, 2));
             allScoresCombined = zeros(1, size(ChromaY, 2));
             CallScoresChroma = zeros(1, size(ChromaY, 2));
             CallScoresCombined = zeros(1, size(ChromaY, 2));
+			%Optimal transposition index
             for oti = 0:size(ChromaY, 2) - 1 
                 %Transpose chroma features
-                thisY = getBeatSyncChromaDelay(ChromaY, BeatsPerWin, 0);
+                thisY = getBeatSyncChromaDelay(ChromaY, BeatsPerBlock, 0);
                 %Compute the OTI of each delay window
                 Comp = zeros(size(ChromaX, 1), size(thisY, 1), size(ChromaX, 2));
                 for cc = 0:size(ChromaY, 2)-1
-                    thisY = getBeatSyncChromaDelay(ChromaY, BeatsPerWin, oti + cc);
+                    thisY = getBeatSyncChromaDelay(ChromaY, BeatsPerBlock, oti + cc);
                     Comp(:, :, cc+1) = ChromaX*thisY'; %Cosine distance
                 end
                 [~, Comp] = max(Comp, [], 3);

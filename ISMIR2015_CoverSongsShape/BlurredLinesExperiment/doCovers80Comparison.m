@@ -16,7 +16,7 @@ N = length(files2);
 beatIdx1 = 3;
 beatIdx2 = 3;
 dim = 200;
-BeatsPerWin = 14;
+BeatsPerBlock = 14;
 Kappa = 0.1;
 
 Scores = zeros(1, N);
@@ -29,7 +29,7 @@ for ii = 1:N
     song = load(files2{ii});
     fprintf(1, 'Getting self-similarity matrices for %s\n', files2{ii});
     DsOrig{ii} = single(getBeatSyncDistanceMatrices(song.allMFCC{beatIdx1}, ...
-        song.allSampleDelaysMFCC{beatIdx1}, song.allbts{beatIdx1}, dim, BeatsPerWin));
+        song.allSampleDelaysMFCC{beatIdx1}, song.allbts{beatIdx1}, dim, BeatsPerBlock));
     toc;
 end
 
@@ -38,7 +38,7 @@ end
 
 song = load('BlurredLines.mat');
 thisDs = single(getBeatSyncDistanceMatrices(song.allMFCC{beatIdx2}, ...
-    song.allSampleDelaysMFCC{beatIdx2}, song.allbts{beatIdx2}, dim, BeatsPerWin));
+    song.allSampleDelaysMFCC{beatIdx2}, song.allbts{beatIdx2}, dim, BeatsPerBlock));
 
 for ii = 1:N
     %Step 1: Compute MFCC Self-Similarity features

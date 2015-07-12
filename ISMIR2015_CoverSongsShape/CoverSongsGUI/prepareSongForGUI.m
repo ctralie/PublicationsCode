@@ -1,5 +1,5 @@
 %Export data from Matlab to be loaded into the Python GUI
-function [] = prepareSongForGUI( filenameout, filePrefix1, filePrefix2, beatIdx1, beatIdx2, dim, BeatsPerWin )
+function [Ds1, Ds2, CSM] = prepareSongForGUI( filenameout, filePrefix1, filePrefix2, beatIdx1, beatIdx2, dim, BeatsPerWin )
     addpath('../BeatSyncFeatures');
     addpath('../SimilarityMatrices');
     songfilename1 = sprintf('../coversongs/covers32k/%s.mp3', filePrefix1);

@@ -46,7 +46,7 @@ for songIdx = 1:length(files)
 end
 
 dim = 200;
-BeatsPerWin = 14;
+BeatsPerBlock = 14;
 
 Kappa = 0.1;
 CSMs = cell(3, 3);
@@ -56,13 +56,13 @@ for beatIdx1 = 1:3
     song1 = load([files{1}, '.mat']);
     fprintf(1, 'Getting self-similarity matrices for %s beatIdx1 = %i\n', files{1}, beatIdx1);
     D1 = single(getBeatSyncDistanceMatrices(song1.allMFCC{beatIdx1}, ...
-        song1.allSampleDelaysMFCC{beatIdx1}, song1.allbts{beatIdx1}, dim, BeatsPerWin)); 
+        song1.allSampleDelaysMFCC{beatIdx1}, song1.allbts{beatIdx1}, dim, BeatsPerBlock)); 
     
     for beatIdx2 = 1:3
         song2 = load([files{2}, '.mat']);
         fprintf(1, 'Getting self-similarity matrices for %s beatIdx2 = %i\n', files{2}, beatIdx2);
         D2 = single(getBeatSyncDistanceMatrices(song2.allMFCC{beatIdx2}, ...
-            song2.allSampleDelaysMFCC{beatIdx2}, song2.allbts{beatIdx2}, dim, BeatsPerWin));
+            song2.allSampleDelaysMFCC{beatIdx2}, song2.allbts{beatIdx2}, dim, BeatsPerBlock));
 
         CSM = bsxfun(@plus, dot(D1, D1, 2), dot(D2, D2, 2)') - 2*(D1*D2');
         MMFCC = groundTruthKNN( CSM, round(size(CSM, 2)*Kappa) );

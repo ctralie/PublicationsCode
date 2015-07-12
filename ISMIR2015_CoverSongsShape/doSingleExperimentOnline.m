@@ -1,14 +1,14 @@
 %Perform an experiment on covers80
 %for a particular choice of beatIdx1 and beatIdx2 for the tempos in the
 %first group and the tempos in the second group, as well as the parameters
-%NIters, K, and Alpha for PatchMatch and BeatsPerWin
+%NIters, K, and Alpha for PatchMatch and BeatsPerBlock
 addpath('BeatSyncFeatures');
 addpath('PatchMatch');
 addpath('SequenceAlignment');
 addpath('SimilarityMatrices');
 
 %Make directory to hold the results if it doesn't exist
-dirName = sprintf('ResultsDim_%i_%i_%i_%g', BeatsPerWin, NIters, K, Alpha);
+dirName = sprintf('ResultsDim_%i_%i_%i_%g', BeatsPerBlock, NIters, K, Alpha);
 if ~exist(dirName);
     mkdir(dirName);
 end
@@ -26,7 +26,7 @@ fprintf(1, '\n\n\n');
 disp('======================================================');
 fprintf(1, 'RUNNING EXPERIMENTS\n');
 fprintf(1, 'Patch Match NIters = %i, K = %i, Alpha = %g\n', NIters, K, Alpha);
-fprintf(1, 'BeatsPerWin = %i\n', BeatsPerWin);
+fprintf(1, 'BeatsPerBlock = %i\n', BeatsPerBlock);
 fprintf(1, 'beatIdx1 = %i, beatIdx2 = %i\n', beatIdx1, beatIdx2);
 disp('======================================================');
 fprintf(1, '\n\n\n');
@@ -69,7 +69,7 @@ for jj = 1:N
         fprintf(1, 'Comparing %i versus %i\n', jj, ii);
         disp('Doing PatchMatch...');
         tic;
-        MMFCC = patchMatch1DMatlab( MFCCsX, SampleDelaysX, bts1, MFCCsY, SampleDelaysY, bts2, BeatsPerWin, NIters, K, Alpha );
+        MMFCC = patchMatch1DMatlab( MFCCsX, SampleDelaysX, bts1, MFCCsY, SampleDelaysY, bts2, BeatsPerBlock, NIters, K, Alpha );
         toc;
         disp('Finished PatchMatch...');
         thisMsMFCC{ii} = sparse(MMFCC);
@@ -77,16 +77,16 @@ for jj = 1:N
         
         %Step 2: Compute transposed chroma delay features
         ChromaX = ChromasOrig{ii};
-        ChromaX = getBeatSyncChromaDelay(ChromaX, BeatsPerWin, 0);
+        ChromaX = getBeatSyncChromaDelay(ChromaX, BeatsPerBlock, 0);
         allScoresChroma = zeros(1, size(ChromaY, 2));
         allScoresCombined = zeros(1, size(ChromaY, 2));
         for oti = 0:size(ChromaY, 2) - 1
-            thisY = getBeatSyncChromaDelay(ChromaY, BeatsPerWin, 0);
+            thisY = getBeatSyncChromaDelay(ChromaY, BeatsPerBlock, 0);
             %Full oti comparison matrix
             Comp = zeros(size(ChromaX, 1), size(thisY, 1), size(ChromaX, 2));
             %Do OTI on each element individually
             for cc = 0:size(ChromaY, 2)-1
-                thisY = getBeatSyncChromaDelay(ChromaY, BeatsPerWin, oti + cc);
+                thisY = getBeatSyncChromaDelay(ChromaY, BeatsPerBlock, oti + cc);
                 Comp(:, :, cc+1) = ChromaX*thisY'; %Cosine distance
             end
             [~, Comp] = max(Comp, [], 3);

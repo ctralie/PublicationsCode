@@ -14,7 +14,7 @@ Alpha = 0.3;
 K = 4;
 beatIdx = 2;
 
-dirname = sprintf('AllCrossSimilarities%i', BeatsPerWin);
+dirname = sprintf('AllCrossSimilarities%i', BeatsPerBlock);
 if ~exist(dirname)
     mkdir(dirname);
 end
@@ -24,7 +24,7 @@ fprintf(1, 'Doing %s\n', files2{songIdx});
 %song
 song = load(['BeatSyncFeatures', filesep, files2{songIdx}, '.mat']);
 [DEmd, DL2, Norms] = getBeatSyncEMDWavelets(song.allMFCC{beatIdx}, ...
-        song.allSampleDelaysMFCC{beatIdx}, song.allbts{beatIdx}, dim, BeatsPerWin);
+        song.allSampleDelaysMFCC{beatIdx}, song.allbts{beatIdx}, dim, BeatsPerBlock);
 DEmd = single(full(DEmd)); DL2 = single(DL2);
 MsEMD = cell(1, N);
 MsL2 = cell(1, N);
@@ -34,7 +34,7 @@ for jj = 1:N
     %song
     song = load(['BeatSyncFeatures', filesep, files1{jj}, '.mat']);
     [DsOrigEmd, DsOrigL2] = getBeatSyncEMDWavelets(song.allMFCC{beatIdx}, ...
-        song.allSampleDelaysMFCC{beatIdx}, song.allbts{beatIdx}, dim, BeatsPerWin);
+        song.allSampleDelaysMFCC{beatIdx}, song.allbts{beatIdx}, dim, BeatsPerBlock);
     DsOrigEmd = single(full(DsOrigEmd));
     DsOrigL2 = single(DsOrigL2);    
     tic

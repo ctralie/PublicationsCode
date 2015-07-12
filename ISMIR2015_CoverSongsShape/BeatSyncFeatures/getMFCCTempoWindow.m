@@ -1,9 +1,9 @@
-function [MFCC, SampleDelays] = getMFCCTempoWindow( X, Fs, tempoPeriod )
+function [MFCC, SampleDelays] = getMFCCTempoWindow( X, Fs, tempoPeriod, windowsPerBeat )
     addpath('rastamat');
     
-    %Get as close as possible to 200 samples per window
-    hopSize = round(Fs*tempoPeriod/200);
-    windowSize = hopSize*200;
+    %Get as close as possible to "windowsPerBeat" samples per window
+    hopSize = round(Fs*tempoPeriod/windowsPerBeat);
+    windowSize = hopSize*windowsPerBeat;
     
     %Do MFCC on chunks of 10 beats at a time to avoid memory issues but to
     %still get the advantage of overlapping windows

@@ -33,48 +33,25 @@ DEFAULT_POS = wx.Point(10, 10)
 CSMNEIGHB = (10, 10)
 
 #GUI element for plotting the self-similarity matrices
-class SelfSimilarityPlot(glcanvas.GLCanvas):
+class SelfSimilarityPlot(wx.Panel):
     def __init__(self, parent, coverSong):
-        attribs = (glcanvas.WX_GL_RGBA, glcanvas.WX_GL_DOUBLEBUFFER, glcanvas.WX_GL_DEPTH_SIZE, 24)
-        glcanvas.GLCanvas.__init__(self, parent, -1, attribList = attribs)    
-        self.context = glcanvas.GLContext(self)
+        wx.Panel.__init__(self, parent)
+        self.figure = Figure((5.0, 5.0), dpi = 100)
         
         self.coverSong = coverSong
+        self.FigDMat = self.figure.add_subplot(111)
+        
         self.currBeat = self.coverSong.currBeat
         self.D = np.zeros((50, 50))
-        self.texID = -2 #Texture ID for self-similarity image     
+        self.updateD()
         
-        #Camera state variables
-        self.size = self.GetClientSize()
-        self.camera = MousePolarCamera(self.size.width, self.size.height)
-        
-        #Main state variables
-        self.MousePos = [0, 0]
-        self.GLinitialized = False
-        #GL-related events
-        wx.EVT_ERASE_BACKGROUND(self, self.processEraseBackgroundEvent)
-        wx.EVT_SIZE(self, self.processSizeEvent)
-        wx.EVT_PAINT(self, self.processPaintEvent)
-        #Mouse Events
-        #wx.EVT_LEFT_DOWN(self, self.MouseDown) 
-        self.initGL()
-    
-    def processEraseBackgroundEvent(self, event): pass #avoid flashing on MSW.
+        self.canvas = FigureCanvas(self, -1, self.figure)
+        self.sizer = wx.BoxSizer(wx.VERTICAL)
+        self.sizer.Add(self.canvas, 1, wx.LEFT | wx.TOP)
+        self.SetSizer(self.sizer)
+        self.Fit()
+        self.draw()
 
-    def processSizeEvent(self, event):
-        self.size = self.GetClientSize()
-        self.SetCurrent(self.context)
-        glViewport(0, 0, self.size.width, self.size.height)
-
-    def processPaintEvent(self, event):
-        dc = wx.PaintDC(self)
-        self.SetCurrent(self.context)
-        if not self.GLinitialized:
-            self.initGL()
-            self.GLinitialized = True
-        self.repaint()
-
-    #Create an OpenGL texture based on the Euclidean self-similarity image
     def updateD(self):
         #Compute self-similarity image
         idxstart = self.coverSong.BeatStartIdx[self.currBeat]
@@ -87,61 +64,19 @@ class SelfSimilarityPlot(glcanvas.GLCanvas):
         dotY = np.reshape(np.sum(Y*Y, 1), (Y.shape[0], 1))
         print "Y.shape = ", Y.shape
         self.D = (dotY + dotY.T) - 2*(np.dot(Y, Y.T))
-        self.D = self.D/np.max(self.D)
-        
-        #Convert to texture using jet colormap
-        cmConvert = cm.get_cmap('jet')
-        im = np.uint8(cmConvert(self.D)*255)
-        im = im[:, :, 0:3]
-        im = Image.fromarray(im)
-        im = im.resize((512, 512), Image.ANTIALIAS)
-        im.save("D.png")
 
-        im = im.convert('RGB')
-        ix, iy, image = im.size[0], im.size[1], im.tostring("raw", "RGB", 0, -1)
-
-        texID = glGenTextures(1)
-        glBindTexture(GL_TEXTURE_2D, texID)
-        glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
-        glTexImage2D(GL_TEXTURE_2D, 0, 3, ix, iy, 0, GL_RGBA, GL_UNSIGNED_BYTE, image)
-        self.texID = texID
-        self.Refresh()
-
-    def repaint(self):
+    def draw(self):
         if self.coverSong.currBeat >= len(self.coverSong.SampleDelays):
             return
         if not (self.currBeat == self.coverSong.currBeat):
             self.currBeat = self.coverSong.currBeat
             self.updateD()
-        
-        glEnable(GL_TEXTURE_2D)
-        glBindTexture(GL_TEXTURE_2D, self.texID)        
-
-        glBegin(GL_QUADS)
-        glTexCoord2f(0.0, 0.0); glVertex2f(-0.8, -0.8)
-        glTexCoord2f(0.0, 1.0); glVertex2f(-0.8, 1.0)
-        glTexCoord2f(1.0, 1.0); glVertex2f(1.0, 1.0)
-        glTexCoord2f(1.0, 0.0); glVertex2f(1.0, -0.8)
-        glEnd()
-
-        glDisable(GL_TEXTURE_2D)
-        self.SwapBuffers()
-    
-    def initGL(self):        
-        glutInit('')
-
-    def handleMouseStuff(self, x, y):
-        #Invert y from what the window manager says
-        y = self.size.height - y
-        self.MousePos = [x, y]
-
-    def MouseDown(self, evt):
-        x, y = evt.GetPosition()
-        self.CaptureMouse()
-        self.handleMouseStuff(x, y)
-        self.Refresh()
+            
+        self.FigDMat.imshow(self.D, cmap=matplotlib.cm.jet)
+        self.FigDMat.hold(True)
+        self.FigDMat.set_title("SSM %s"%self.coverSong.title)
+        #TODO: Plot moving horizontal line 
+        self.canvas.draw()
 
 #GUI element for plotting a subsection of the cross-similarity matrix to help
 #user navigate to nearby pixels in the cross-similarity matrix

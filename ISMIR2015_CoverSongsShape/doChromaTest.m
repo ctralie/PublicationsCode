@@ -12,7 +12,7 @@ files(1:length(files1)) = files1;
 files(length(files1)+1:end) = files2;
 
 load('Chromas.mat');
-BeatsPerWin = 10;
+BeatsPerBlock = 10;
 tempo = 120;
 
 % Chromas = cell(length(files), 1);
@@ -43,11 +43,11 @@ Scores = inf*ones(80, 80);
 
 fprintf(1, 'Doing K = %g, NIters = %i, Alpha = %g...\n\n', K, NIters, Alpha);
 for ii = 1:80
-    X = getBeatSyncChromaDelay(Chromas{ii}, BeatsPerWin, 0);
+    X = getBeatSyncChromaDelay(Chromas{ii}, BeatsPerBlock, 0);
     parfor jj = 1:80
         fprintf(1, 'Doing %i - %i\n', ii, jj);
         for cc = 0:11
-            Y = getBeatSyncChromaDelay(Chromas{jj+80}, BeatsPerWin, cc);
+            Y = getBeatSyncChromaDelay(Chromas{jj+80}, BeatsPerBlock, cc);
             D = bsxfun(@plus, dot(X, X, 2), dot(Y, Y, 2)') - 2*(X*Y');
             CSM = patchMatch1DIMPMatlab(D, NIters, K, Alpha);
             CSM = double(full(CSM));

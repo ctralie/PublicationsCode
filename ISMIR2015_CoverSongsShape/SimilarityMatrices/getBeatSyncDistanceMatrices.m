@@ -1,6 +1,7 @@
-function [ D ] = getBeatSyncDistanceMatrices( X, SampleDelays, bts, dim, BeatsPerWin )
+function [ D, beatIdx ] = getBeatSyncDistanceMatrices( X, SampleDelays, bts, dim, BeatsPerBlock )
     addpath('../../');
-    N = length(bts)-BeatsPerWin;
+    CLEANEND = 1;
+    N = length(bts)-BeatsPerBlock;
     
     D = zeros(N, dim*dim);
     
@@ -14,9 +15,11 @@ function [ D ] = getBeatSyncDistanceMatrices( X, SampleDelays, bts, dim, BeatsPe
     end
     
     %Point center and sphere-normalize point clouds
+    validIdx = ones(1, N);
     parfor ii = 1:N
-        Y = X(beatIdx(ii)+1:beatIdx(ii+BeatsPerWin), :);
+        Y = X(beatIdx(ii)+1:beatIdx(ii+BeatsPerBlock), :);
         if (isempty(Y))
+            validIdx(ii) = 0;
             continue;
         end
         Y = bsxfun(@minus, mean(Y), Y);
@@ -26,5 +29,9 @@ function [ D ] = getBeatSyncDistanceMatrices( X, SampleDelays, bts, dim, BeatsPe
         thisD = bsxfun(@plus, dotY, dotY') - 2*(Y*Y');
         thisD = imresize(thisD, [dim dim]);
         D(ii, :) = thisD(:);
+    end
+    if CLEANEND
+        idx = find(validIdx == 0);
+        D = D(1:idx-1, :);
     end
 end

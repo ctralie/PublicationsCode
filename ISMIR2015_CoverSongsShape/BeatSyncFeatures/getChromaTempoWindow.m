@@ -1,16 +1,16 @@
-function [Chroma, SampleDelays] = getChromaTempoWindow( X, Fs, tempoPeriod, NChromaBins, AvgFactor )
+function [Chroma, SampleDelays] = getChromaTempoWindow( X, Fs, tempoPeriod, windowsPerBeat, NChromaBins, AvgFactor )
     addpath('../coversongs/src/chroma-ansyn');
     
-    if nargin < 4
+    if nargin < 5
         NChromaBins = 12;
     end
 
     %Make the window size about 50 milliseconds
     macroHopSize = round(Fs/(20*4));
     
-    %Get as close as possible to 200 samples per window
+    %Get as close as possible to 50 samples per window
     windowSamples = Fs*tempoPeriod;
-    hopSize = round(windowSamples/200);
+    hopSize = round(windowSamples/windowsPerBeat);
     macroHopSize = round(macroHopSize/hopSize)*hopSize;
     NHops = macroHopSize/hopSize;%Number of offsets at which to compute chroma
     windowSize = macroHopSize*4;
@@ -29,7 +29,7 @@ function [Chroma, SampleDelays] = getChromaTempoWindow( X, Fs, tempoPeriod, NChr
     end
     %Now perform averaging by the average factor to make the effective
     %window size of each window
-    if nargin < 5
+    if nargin < 6
         AvgFactor = round(windowSamples/windowSize);
     end
     NextChroma = zeros(size(Chroma, 1), size(Chroma, 2) - AvgFactor + 1);

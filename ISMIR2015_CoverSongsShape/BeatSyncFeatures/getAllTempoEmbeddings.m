@@ -7,6 +7,7 @@ files(1:length(files1)) = files1;
 files(length(files1)+1:end) = files2;
 
 tempos = [60, 120, 180];
+windowsPerBeat = 20;
 
 for songIdx = 1:length(files)
     outname = sprintf('%s.mat', files{songIdx});
@@ -42,14 +43,14 @@ for songIdx = 1:length(files)
 
         tempoPeriod = mean(bts(2:end) - bts(1:end-1));
         disp('Getting MFCC...');
-        [MFCC, SampleDelaysMFCC] = getMFCCTempoWindow(X, Fs, tempoPeriod);
+        [MFCC, SampleDelaysMFCC] = getMFCCTempoWindow(X, Fs, tempoPeriod, windowsPerBeat);
         disp('Getting Chroma...');
-        [Chroma, SampleDelaysChroma] = getChromaTempoWindow(X, Fs, tempoPeriod, 36);
+        %[Chroma, SampleDelaysChroma] = getChromaTempoWindow(X, Fs, tempoPeriod, windowsPerBeat, 36);
         BeatSyncChroma = getBeatSyncChromaMatrixEllis(X, Fs, bts);
         
         allbts{tempoidx} = bts;
-        allChroma{tempoidx} = Chroma;
-        allSampleDelaysChroma{tempoidx} = SampleDelaysChroma;
+        %allChroma{tempoidx} = Chroma;
+        %allSampleDelaysChroma{tempoidx} = SampleDelaysChroma;
         allMFCC{tempoidx} = MFCC;
         allSampleDelaysMFCC{tempoidx} = SampleDelaysMFCC;
         allBeatSyncChroma{tempoidx} = BeatSyncChroma;
