@@ -81,7 +81,7 @@ class SelfSimilarityPlot(wx.Panel):
 #GUI element for plotting a subsection of the cross-similarity matrix to help
 #user navigate to nearby pixels in the cross-similarity matrix
 class CSMSectionPlot(wx.Panel):
-    def __init__(self, parent, coverSong1, coverSong2, CSM, idx, glplots):
+    def __init__(self, parent, coverSong1, coverSong2, CSM, idx, glplots, npplots):
         wx.Panel.__init__(self, parent)
         self.figure = Figure((5.0, 5.0), dpi = 100)
         
@@ -92,10 +92,11 @@ class CSMSectionPlot(wx.Panel):
         self.maxC = np.max(CSM)
         self.idx = idx
         self.glplots = glplots
+        self.npplots = npplots
         self.CSMPlot = self.figure.add_subplot(111)
 
         self.canvas = FigureCanvas(self, -1, self.figure)
-        self.cid = self.canvas.mpl_connect('button_press_event', self.OnClick)
+        self.cid = self.canvas.mpl_connect('key_press_event', self.OnKeyPress)
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.sizer.Add(self.canvas, 1, wx.LEFT | wx.TOP)
         self.SetSizer(self.sizer)
@@ -108,13 +109,21 @@ class CSMSectionPlot(wx.Panel):
         self.coverSong2.changeBeat(self.idx[1])
         for g in self.glplots:
             g.Refresh()
+        for n in self.npplots:
+            n.draw()
         self.draw()
 
-    def OnClick(self, evt):
-        idx = [0, 0]
-        idx[0] = int(math.floor(evt.ydata))
-        idx[1] = int(math.floor(evt.xdata))
-        print "idx = ", idx
+    def OnKeyPress(self, evt):
+        idx = self.idx
+        if evt.key == 'left':
+            idx[1] -= 1
+        elif evt.key == 'right':
+            idx[1] += 1
+        elif evt.key == 'up':
+            idx[0] -= 1
+        elif evt.key == 'down':
+            idx[0] += 1
+        #TODO: Bounds checking
         self.updateIdx(idx)
 
     def draw(self):
@@ -355,7 +364,7 @@ class CoverSongsFrame(wx.Frame):
         playButton2.Bind(wx.EVT_BUTTON, self.OnPlayButton2)
         gridSizer.Add(buttonRow, 1, wx.EXPAND)
         
-        CSMSection = CSMSectionPlot(self, cover1Info, cover2Info, CSM, idx, [self.curve1Canvas, self.curve2Canvas])
+        CSMSection = CSMSectionPlot(self, cover1Info, cover2Info, CSM, idx, [self.curve1Canvas, self.curve2Canvas], [self.SSM1Canvas, self.SSM2Canvas])
         gridSizer.Add(CSMSection, 1, wx.EXPAND)
         
         self.SetSizer(gridSizer)
