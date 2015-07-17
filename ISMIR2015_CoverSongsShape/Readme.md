@@ -36,6 +36,7 @@ dim = [100, 200, 300];
 The script will try all combinations of parameters that are specified.  
 <b>NOTE:</b> If you have access to a cluster computer with the SLURM system, you can parallelize the different parameter choices by modifying and running the script "doBatchExperiments.q"
 
+<b>NOTE ALSO:</b> If you want to view the cross-similarity and self-similarity matrices for two songs of your own choosing, you can bypass the Covers80 dataset completely, as long as you have downloaded and extracted the <a href = "http://labrosa.ee.columbia.edu/matlab/rastamat/rastamat.tgz">rastamat</a> library to the <b>BeatSyncFeatures</b> directory.  See the documentation in the "CoverSongsGUI" folder for more information
 
 
 #Code Folders Information:
