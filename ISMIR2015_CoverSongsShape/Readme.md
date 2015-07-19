@@ -1,10 +1,14 @@
 #Overview
-This repository contains all of the code used to generate the results presented in the paper
+This repository contains all of the code used to generate the results presented in the paper.
+
+
 
 <table border = "1"><tr><td>
 Christopher J Tralie and Paul Bendich. Cover song identification with timbral shape. In <i>16th International
 Society for Music Information Retrieval (ISMIR) Conference,</i> 2015.
 </td></tr></table>
+
+<h3><a href = "https://www.youtube.com/watch?v=GrWIrR1dLak">Click here</a> to see a narrated Youtube video which explains this paper at a high level</h3>
 
 Most of the code is written in Matlab to take advantage of fast matrix multiplication routines and existing libraries for music feature extraction, but a few files (sequence alignment) are written in C++, and the GUI is written in Python.
 

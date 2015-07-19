@@ -240,7 +240,7 @@ class CrossSimilaritysFrame(wx.Frame):
         self.pos = pos
         
         filemenu = wx.Menu()
-        menuLoadMatrix = filemenu.Append(CrossSimilaritysFrame.ID_LOADMATRIX, "&Load Dissimilarity Matrix","Load Dissimilarity Matrix")
+        menuLoadMatrix = filemenu.Append(CrossSimilaritysFrame.ID_LOADMATRIX, "&Load Cross-Similarity Matrix","Load Cross-Similarity Matrix")
         self.Bind(wx.EVT_MENU, self.OnLoadMatrix, menuLoadMatrix)
         
         # Creating the menubar.
@@ -248,7 +248,7 @@ class CrossSimilaritysFrame(wx.Frame):
         menuBar.Append(filemenu,"&File") # Adding the "filemenu" to the MenuBar
         self.SetMenuBar(menuBar)  # Adding the MenuBar to the Frame content.
 
-        #The numpy plot that will store the dissimilarity matrix and all
+        #The numpy plot that will store the cross-similarity matrix and all
         #of the info needed to construct self-similarity matrices
         self.CSPlot = CrossSimilarityPlot(self)
 
