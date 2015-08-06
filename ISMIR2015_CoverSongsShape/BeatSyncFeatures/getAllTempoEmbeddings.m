@@ -7,7 +7,7 @@ files(1:length(files1)) = files1;
 files(length(files1)+1:end) = files2;
 
 tempos = [60, 120, 180];
-windowsPerBeat = 200;
+windowsPerBeat = 20;
 
 for songIdx = 1:length(files)
     outname = sprintf('%s.mat', files{songIdx});

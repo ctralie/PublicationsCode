@@ -29,26 +29,12 @@ fprintf(1, 'beatIdx1 = %i, beatIdx2 = %i\n', beatIdx1, beatIdx2);
 disp('======================================================');
 fprintf(1, '\n\n\n');
 
-
-%Scores for ordinary Smith Waterman
-ScoresChroma = zeros(N, N); %Chroma by itself
-ScoresMFCC = zeros(N, N); %MFCC by itself
-Scores = zeros(N, N); %Combined
-MaxTransp = zeros(N, N); %Transposition that led to the highest score
-MaxTranspCombined = zeros(N, N);
-
-
 %Scores for Smith Waterman with constraints
-CScoresChroma = zeros(N, N); %Chroma by itself
 CScoresMFCC = zeros(N, N); %MFCC by itself
-CScores = zeros(N, N); %Combined
-CMaxTransp = zeros(N, N); %Transposition that led to the highest score
-CMaxTranspCombined = zeros(N, N);
 
 %Keep track of the sizes of all of the cross-similarity matrices for
 %convenience
 CrossSizes = cell(N, N);
-
 
 %Split the precomputation of distance matrices into 4 groups to save memory
 %(at the cost of some computation time since the cover distance matrices are
@@ -90,58 +76,10 @@ for batch = 0:3
                 MMFCC = groundTruthKNN( CSM, round(size(CSM, 2)*Kappa) );
                 MMFCC = MMFCC.*groundTruthKNN( CSM', round(size(CSM', 2)*Kappa) )';
             end
-            ScoresMFCC(ii+batch*N/4, jj) = swalignimp(double(full(MMFCC)));
             CScoresMFCC(ii+batch*N/4, jj) = swalignimpconstrained(double(full(MMFCC)));
-
-            %Step 2: Compute transposed chroma delay features
-            ChromaX = ChromasOrig{ii};
-            ChromaX = getBeatSyncChromaDelay(ChromaX, BeatsPerBlock, 0);
-            allScoresChroma = zeros(1, size(ChromaY, 2));
-            allScoresCombined = zeros(1, size(ChromaY, 2));
-            CallScoresChroma = zeros(1, size(ChromaY, 2));
-            CallScoresCombined = zeros(1, size(ChromaY, 2));
-			%Optimal transposition index
-            for oti = 0:size(ChromaY, 2) - 1 
-                %Transpose chroma features
-                thisY = getBeatSyncChromaDelay(ChromaY, BeatsPerBlock, 0);
-                %Compute the OTI of each delay window
-                Comp = zeros(size(ChromaX, 1), size(thisY, 1), size(ChromaX, 2));
-                for cc = 0:size(ChromaY, 2)-1
-                    thisY = getBeatSyncChromaDelay(ChromaY, BeatsPerBlock, oti + cc);
-                    Comp(:, :, cc+1) = ChromaX*thisY'; %Cosine distance
-                end
-                [~, Comp] = max(Comp, [], 3);
-                CSMChroma = (Comp == 1);%Only keep elements with no shift
-
-                allScoresChroma(oti+1) = swalignimp(double(CSMChroma));
-                CallScoresChroma(oti+1) = swalignimpconstrained(double(CSMChroma));
-                dims = [size(CSMChroma); size(MMFCC)];
-                dims = min(dims, [], 1);
-                M = double(CSMChroma(1:dims(1), 1:dims(2)) + MMFCC(1:dims(1), 1:dims(2)) );
-                M = double(M > 0);
-                M = full(M);
-                allScoresCombined(oti+1) = swalignimp(M);
-                CallScoresCombined(oti+1) = swalignimpconstrained(M);
-            end
-            %Find best scores over transpositions
-            [ChromaScore, idx] = max(allScoresChroma);
-            ScoresChroma(ii+batch*N/4, jj) = ChromaScore;
-            MaxTransp(ii+batch*N/4, jj) = idx;
-            [ChromaScore, idx] = max(CallScoresChroma);
-            CScoresChroma(ii+batch*N/4, jj) = ChromaScore;
-            CMaxTransp(ii+batch*N/4, jj) = idx;            
-            
-            [Score, idx] = max(allScoresCombined);
-            Scores(ii+batch*N/4, jj) = Score;
-            MaxTranspCombined(ii+batch*N/4, jj) = idx;
-            [Score, idx] = max(CallScoresCombined);
-            CScores(ii+batch*N/4, jj) = Score;
-            CMaxTranspCombined(ii+batch*N/4, jj) = idx;
             fprintf(1, '.');
         end
     end
 end
 
-save(outfilename, ...
-    'CrossSizes', 'ScoresChroma', 'ScoresMFCC', 'Scores', 'MaxTransp', 'MaxTranspCombined', ...
-    'CScoresChroma', 'CScoresMFCC', 'CScores', 'CMaxTransp', 'CMaxTranspCombined');
+save(outfilename, 'CrossSizes', 'CScoresMFCC');
