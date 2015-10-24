@@ -36,49 +36,41 @@ CScoresMFCC = zeros(N, N); %MFCC by itself
 %convenience
 CrossSizes = cell(N, N);
 
-%Split the precomputation of distance matrices into 4 groups to save memory
-%(at the cost of some computation time since the cover distance matrices are
-%recomputed 4 times)
-for batch = 0:3
-    fprintf(1, 'Precomputing self-similarity matrices for original songs batch %i of 4...\n', batch+1);
-    DsOrig = cell(1, N/4);
-    ChromasOrig = cell(1, N/4);
-    for ii = 1:N/4
-        tic;
-        song = load(['BeatSyncFeatures', filesep, files1{ii+batch*N/4}, '.mat']);
-        fprintf(1, 'Getting self-similarity matrices for %s\n', files1{ii+batch*N/4});
-        DsOrig{ii} = single(getBeatSyncDistanceMatrices(song.allMFCC{beatIdx1}, ...
-            song.allSampleDelaysMFCC{beatIdx1}, song.allbts{beatIdx1}, dim, BeatsPerBlock));
-        ChromasOrig{ii} = song.allBeatSyncChroma{beatIdx1};
-        toc;
-    end
+fprintf(1, 'Precomputing self-similarity matrices for original songs...\n');
+DsOrig = cell(1, N);
+ChromasOrig = cell(1, N);
+for ii = 1:N
+    tic;
+    song = load(['BeatSyncFeatures', filesep, files1{ii}, '.mat']);
+    fprintf(1, 'Getting self-similarity matrices for %s\n', files1{ii});
+    DsOrig{ii} = single(getBeatSyncDistanceMatrices(song.MFCC, ...
+        song.SampleDelaysMFCC, song.allbts{beatIdx1}, dim, BeatsPerBlock));
+    toc;
+end
 
-    %Now loop through the cover songs
-    for jj = 1:N
-        fprintf(1, 'Comparing cover song %i of %i\n', jj, N);
-        tic
-        song = load(['BeatSyncFeatures', filesep, files2{jj}, '.mat']);
-        fprintf(1, 'Getting self-similarity matrices for %s\n', files2{jj});
-        thisDs = single(getBeatSyncDistanceMatrices(song.allMFCC{beatIdx2}, ...
-            song.allSampleDelaysMFCC{beatIdx2}, song.allbts{beatIdx2}, dim, BeatsPerBlock));
-        ChromaY = song.allBeatSyncChroma{beatIdx2};
+%Now loop through the cover songs
+for jj = 1:N
+    fprintf(1, 'Comparing cover song %i of %i\n', jj, N);
+    tic
+    song = load(['BeatSyncFeatures', filesep, files2{jj}, '.mat']);
+    fprintf(1, 'Getting self-similarity matrices for %s\n', files2{jj});
+    thisDs = single(getBeatSyncDistanceMatrices(song.MFCC, ...
+        song.SampleDelaysMFCC, song.allbts{beatIdx2}, dim, BeatsPerBlock));
 
-        thisMsMFCC = cell(N, 1);
-        for ii = 1:N/4
-            %Step 1: Compute MFCC Self-Similarity features
-            %Precompute L2 cross-similarity matrix and find Kappa percent mutual nearest
-            %neighbors
-            CSM = bsxfun(@plus, dot(DsOrig{ii}, DsOrig{ii}, 2), dot(thisDs, thisDs, 2)') - 2*(DsOrig{ii}*thisDs');
-            CrossSizes{ii+batch*N/4, jj} = size(CSM);
-            if DOPATCHMATCH
-                MMFCC = patchMatch1DIMPMatlab( CSM, NIters, K, Alpha );
-            else
-                MMFCC = groundTruthKNN( CSM, round(size(CSM, 2)*Kappa) );
-                MMFCC = MMFCC.*groundTruthKNN( CSM', round(size(CSM', 2)*Kappa) )';
-            end
-            CScoresMFCC(ii+batch*N/4, jj) = swalignimpconstrained(double(full(MMFCC)));
-            fprintf(1, '.');
+    parfor ii = 1:N
+        %Step 1: Compute MFCC Self-Similarity features
+        %Precompute L2 cross-similarity matrix and find Kappa percent mutual nearest
+        %neighbors
+        CSM = bsxfun(@plus, dot(DsOrig{ii}, DsOrig{ii}, 2), dot(thisDs, thisDs, 2)') - 2*(DsOrig{ii}*thisDs');
+        CrossSizes{ii, jj} = size(CSM);
+        if DOPATCHMATCH
+            MMFCC = patchMatch1DIMPMatlab( CSM, NIters, K, Alpha );
+        else
+            MMFCC = groundTruthKNN( CSM, round(size(CSM, 2)*Kappa) );
+            MMFCC = MMFCC.*groundTruthKNN( CSM', round(size(CSM', 2)*Kappa) )';
         end
+        CScoresMFCC(ii, jj) = swalignimpconstrained(double(full(MMFCC)));
+        fprintf(1, '.');
     end
 end
 

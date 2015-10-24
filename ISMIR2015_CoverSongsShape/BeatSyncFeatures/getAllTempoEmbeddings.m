@@ -7,9 +7,10 @@ files(1:length(files1)) = files1;
 files(length(files1)+1:end) = files2;
 
 tempos = [60, 120, 180];
-windowsPerBeat = 20;
+windowsPerBeat = 10;
 
 for songIdx = 1:length(files)
+    tic;
     outname = sprintf('%s.mat', files{songIdx});
     if exist(outname)
         continue;
@@ -29,31 +30,20 @@ for songIdx = 1:length(files)
     fprintf(1, 'Finished loading %s\n', files{songIdx});
     
     allbts = cell(length(tempos), 1);
-    allChroma = cell(length(tempos), 1);
-    allSampleDelaysChroma = cell(length(tempos), 1);
-    allMFCC = cell(length(tempos), 1);
-    allSampleDelaysMFCC = cell(length(tempos), 1);
-    allBeatSyncChroma = cell(length(tempos), 1);
     
     for tempoidx = 1:length(tempos)
         tempo = tempos(tempoidx);
-        fprintf(1, 'Getting features for %s %i BPM Seed...\n', files{songIdx}, tempo);
         bts = beat(X, Fs, tempo, 6);
-        makeBeatsAudio( files{songIdx}, sprintf('%sBts%i', files{songIdx}, tempo), bts );
-
-        tempoPeriod = mean(bts(2:end) - bts(1:end-1));
-        disp('Getting MFCC...');
-        [MFCC, SampleDelaysMFCC] = getMFCCTempoWindow(X, Fs, tempoPeriod, windowsPerBeat);
-        disp('Getting Chroma...');
-        %[Chroma, SampleDelaysChroma] = getChromaTempoWindow(X, Fs, tempoPeriod, windowsPerBeat, 36);
-        BeatSyncChroma = getBeatSyncChromaMatrixEllis(X, Fs, bts);
-        
         allbts{tempoidx} = bts;
-        %allChroma{tempoidx} = Chroma;
-        %allSampleDelaysChroma{tempoidx} = SampleDelaysChroma;
-        allMFCC{tempoidx} = MFCC;
-        allSampleDelaysMFCC{tempoidx} = SampleDelaysMFCC;
-        allBeatSyncChroma{tempoidx} = BeatSyncChroma;
+        makeBeatsAudio( files{songIdx}, sprintf('%sBts%i', files{songIdx}, tempo), bts );
     end
-    save(outname, 'tempos', 'allbts', 'allChroma', 'allSampleDelaysChroma', 'allMFCC', 'allSampleDelaysMFCC', 'allBeatSyncChroma');
+    
+    fprintf(1, 'Getting MFCC features for %s %i...\n', files{songIdx});
+
+    tempoPeriod = mean(allbts{2}(2:end) - allbts{2}(1:end-1));
+    [MFCC, SampleDelaysMFCC] = getMFCCTempoWindow(X, Fs, tempoPeriod, windowsPerBeat);
+
+    save(outname, 'tempos', 'allbts', 'MFCC', 'SampleDelaysMFCC');
+    toc;
+    
 end

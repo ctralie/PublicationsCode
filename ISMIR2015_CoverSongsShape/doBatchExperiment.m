@@ -1,11 +1,11 @@
 %A wrapper around doSingleExperiment for SLURM
 %Input Parameter: ExperimentIdx
 
-[a, b, c, d, e] = ind2sub([length(dim), length(BeatsPerBlock), length(Kappa), length(beatIdxs1), length(beatIdxs2)], ExperimentIdx);
+[a, b, c, d, e] = ind2sub([length(dims), length(BeatsPerBlocks), length(Kappas), length(beatIdxs1), length(beatIdxs2)], ExperimentIdx);
 
-dim = dim(a);
-BeatsPerBlock = BeatsPerBlock(b);
-Kappa = Kappa(c);
+dim = dims(a);
+BeatsPerBlock = BeatsPerBlocks(b);
+Kappa = Kappas(c);
 beatIdx1 = beatIdxs1(d);
 beatIdx2 = beatIdxs2(e);
 

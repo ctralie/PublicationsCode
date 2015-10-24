@@ -18,14 +18,14 @@ Below is a list of instructions to replicate the results reported in the paper
 
 1. Download the <a href = "http://labrosa.ee.columbia.edu/projects/coversongs/covers80/">"covers 80"</a> benchmark dataset (<a href = "http://labrosa.ee.columbia.edu/projects/coversongs/covers80/covers80.tgz">covers80.tgz</a>) and extract to the root of this directory.  When this is done, you should have a folder "coversongs" at the root of this directory which contains two folders: "covers32k" and "src"
 2. Download the <a href = "http://labrosa.ee.columbia.edu/matlab/rastamat/rastamat.tgz">rastamat</a> library for computing MFCC features and extract to the <b>BeatSyncFeatures</b> directory
-2. Run the Matlab file "getAllTempoEmbedding.m" in <b>BeatSyncFeatures/</b> to precompute all MFCC and Chroma features.  This may take a while the first time.  If it fails because your version of Matlab cannot read .mp3 files, you can convert them to .ogg format with the file "convertMp3sToOggs.py" found in coversongs/
+2. Run the Matlab file "getAllTempoEmbedding.m" in <b>BeatSyncFeatures/</b> to precompute all MFCC features.  This may take a while the first time.  If it fails because your version of Matlab cannot read .mp3 files, you can convert them to .ogg format with the file "convertMp3sToOggs.py" found in coversongs/
 3. Choose a set of parameters and loop through all combinations of these parameters in a series of batch tests.  Each parameter is described more in the paper.  Run the following Matlab code at the root of this directory to perform experiments on the covers80 dataset
 
 ~~~~~ matlab
 %Parameters to try
-dim = 200; %Resized dimension of self-similarity matrices
-BeatsPerBlock = 12; %Number of beats per block
-Kappa = 0.1; %Fraction of mutual nearest neighbors to take when converting a cross-similarity matrix to a binary cross-similarity matrix
+dims = 200; %Resized dimension of self-similarity matrices
+BeatsPerBlocks = 12; %Number of beats per block
+Kappas = 0.1; %Fraction of mutual nearest neighbors to take when converting a cross-similarity matrix to a binary cross-similarity matrix
 beatIdxs1 = 1:3;%Tempo levels to try for the first song (1: 60bpm bias, 2: 120bmp bias, 3:180bmp bias)
 beatIdxs2 = 1:3;%Tempo levels to try for the second song
 
@@ -34,14 +34,15 @@ doAllExperiments;
 
 To loop through additional parameters, you simply make the corresponding parameter variables into lists.  For instance, to try out a self-similarity dimension of 100, 200, and 300 along with the other parameter choices, change dim to
 ~~~~~ matlab
-dim = [100, 200, 300];
+dims = [100, 200, 300];
 ~~~~~
 
 The script will try all combinations of parameters that are specified.  
-<b>NOTE:</b> If you have access to a cluster computer with the SLURM system, you can parallelize the different parameter choices by modifying and running the script "doBatchExperiments.q"
+<b>NOTE:</b> If you have access to a cluster computer with the SLURM system, you can parallelize the different parameter choices by modifying and running the script "doBatchExperiments.q."  Otherwise, it will take about an hour for one experiment run, fixing Kappa/BeatsPerBlock/dim and varying through all beat biases
 
 <b>NOTE ALSO:</b> If you want to view the cross-similarity and self-similarity matrices for two songs of your own choosing, you can bypass the Covers80 dataset completely, as long as you have downloaded and extracted the <a href = "http://labrosa.ee.columbia.edu/matlab/rastamat/rastamat.tgz">rastamat</a> library to the <b>BeatSyncFeatures</b> directory.  See the documentation in the "CoverSongsGUI" folder for more information
 
+4. To see the results after this script has run, change into the "Results" directory and run the "processResults.m" script.  This script will report the number of cover songs correct, along with the mean and median rank of each cover song, and it will output this information in an HTML table format
 
 #Code Folders Information:
 Below is a description of the code in each directory in this repository

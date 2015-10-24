@@ -1,15 +1,15 @@
-for k = 1:length(Kappa)
+for k = 1:length(Kappas)
     %fprintf(1, '<h2>Kappa = %g</h2>\n<table border = "1">\n', Kappa(k));
     fprintf(1, '<table border = "1">\n');
-    fprintf(1, '<tr><td>Kappa = %g</td>', Kappa(k));
-    for b = 1:length(BeatsPerBlock)
-        fprintf(1, '<td>B = %i</td>', BeatsPerBlock(b));
+    fprintf(1, '<tr><td>Kappa = %g</td>', Kappas(k));
+    for b = 1:length(BeatsPerBlocks)
+        fprintf(1, '<td>B = %i</td>', BeatsPerBlocks(b));
     end
     fprintf(1, '</tr>\n');
-    for d = 1:length(dim)
-        fprintf(1, '<tr><td>d = %i</td>', dim(d));
-        for b = 1:length(BeatsPerBlock)
-            dirName = sprintf('%i_%i_%g', dim(d), BeatsPerBlock(b), Kappa(k));
+    for d = 1:length(dims)
+        fprintf(1, '<tr><td>d = %i</td>', dims(d));
+        for b = 1:length(BeatsPerBlocks)
+            dirName = sprintf('%i_%i_%g', dims(d), BeatsPerBlocks(b), Kappas(k));
             ScoresMFCCF = zeros(80, 80);
             for beatIdx1 = beatIdxs1
                 for beatIdx2 = beatIdxs2
