@@ -18,12 +18,12 @@ Below is a list of instructions to replicate the results reported in the paper
 
 1. Download the <a href = "http://labrosa.ee.columbia.edu/projects/coversongs/covers80/">"covers 80"</a> benchmark dataset (<a href = "http://labrosa.ee.columbia.edu/projects/coversongs/covers80/covers80.tgz">covers80.tgz</a>) and extract to the root of this directory.  When this is done, you should have a folder "coversongs" at the root of this directory which contains two folders: "covers32k" and "src"
 2. Download the <a href = "http://labrosa.ee.columbia.edu/matlab/rastamat/rastamat.tgz">rastamat</a> library for computing MFCC features and extract to the <b>BeatSyncFeatures</b> directory
-2. Run the Matlab file "getAllTempoEmbedding.m" in <b>BeatSyncFeatures/</b> to precompute all MFCC features.  This may take a while the first time.  If it fails because your version of Matlab cannot read .mp3 files, you can convert them to .ogg format with the file "convertMp3sToOggs.py" found in coversongs/
+2. Run the Matlab file "getAllTempoEmbeddings.m" in <b>BeatSyncFeatures/</b> to precompute all MFCC features.  This may take a while the first time.  If it fails because your version of Matlab cannot read .mp3 files, you can convert them to .ogg format with the file "convertMp3sToOggs.py" found in coversongs/
 3. Choose a set of parameters and loop through all combinations of these parameters in a series of batch tests.  Each parameter is described more in the paper.  Run the following Matlab code at the root of this directory to perform experiments on the covers80 dataset
 
 ~~~~~ matlab
 %Parameters to try
-dims = 200; %Resized dimension of self-similarity matrices
+dims = 50; %Resized dimension of self-similarity matrices
 BeatsPerBlocks = 12; %Number of beats per block
 Kappas = 0.1; %Fraction of mutual nearest neighbors to take when converting a cross-similarity matrix to a binary cross-similarity matrix
 beatIdxs1 = 1:3;%Tempo levels to try for the first song (1: 60bpm bias, 2: 120bmp bias, 3:180bmp bias)
@@ -32,9 +32,9 @@ beatIdxs2 = 1:3;%Tempo levels to try for the second song
 doAllExperiments;
 ~~~~~
 
-To loop through additional parameters, you simply make the corresponding parameter variables into lists.  For instance, to try out a self-similarity dimension of 100, 200, and 300 along with the other parameter choices, change dim to
+To loop through additional parameters, you simply make the corresponding parameter variables into lists.  For instance, to try out a self-similarity dimension of 25, 50, and 100 along with the other parameter choices, change dims to
 ~~~~~ matlab
-dims = [100, 200, 300];
+dims = [25, 50, 100];
 ~~~~~
 
 The script will try all combinations of parameters that are specified.  

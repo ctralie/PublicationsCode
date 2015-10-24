@@ -1,0 +1,189 @@
+<html>
+
+<head>
+<!--External Libraries!-->
+<script type="text/javascript" src="libs/glMatrix-0.9.5.min.js"></script>
+<script type="text/javascript" src="libs/webgl-utils.js"></script>
+<script type="text/javascript" src="libs/numeric-1.2.6.min.js"></script>
+
+<!--My Scripts!-->
+<script src="LoopDittyGL.js"></script>
+<script src="EchoNestInteractor.js"></script>
+</head>
+
+<body onload="webGLStart();">
+
+<!--<script>
+SC.initialize({
+  client_id: 'b302c6dd719d6e25ac23e4c34335272c'
+});
+
+// stream track id 293
+SC.stream("/tracks/6142099", function(sound){
+  sound.play();
+});
+
+</script>!-->
+
+<table>
+<tr><td><h3>Audio File</h3></td><td><input type = "file" id = "audioInput"></td></tr>
+<tr><td><h3>Geometric Model File</h3></td><td><input type="file" id="geomModelInput"></td></tr>
+</table>
+
+
+
+
+
+<h2><p id = "pagestatus"></p></h2>
+
+
+<table><tr><td>
+<table><tr><td>
+<canvas id="LoopDittyGLCanvas" style="border: none;" width="800" height="600"></canvas>
+</td></tr>
+<tr><td bgcolor = "black">
+<input type="range" id="timeSlider" min = "0" max = "1000" value = "0" step = "1" style="width:760px">
+</td></tr>
+</table>
+
+<table>
+<tr>
+<td><button type = "button" onclick = "playAudioButton()">Play</button></td>
+<td><button type = "button" onclick = "pauseAudio()">Pause</button></td>
+</tr>
+</table>
+</td>
+<td>
+<h1><u>Song Information</u></h1>
+<table>
+<tr><td><h2><u>Variance Explained<u>:</h2></td><td><h2><div id = "varExplainedText"></div></h2></td></tr>
+</table>
+</td>
+</table>
+
+
+</td>
+</tr></table>
+
+<script>
+    var source = null;
+    var analyser = null;
+    var context = null;
+    var buffer = null;
+    var fileInput = document.getElementById('geomModelInput');
+    var result = document.getElementById('text');
+    
+    var displayTimeEdges = true;
+    var displayScaffoldingEdges = true;
+
+    function disconnect() {
+        source.stop();
+        source.disconnect(0);
+        analyser.disconnect(0);
+    }
+
+	fileInput.addEventListener('change', function(e) {
+		var file = fileInput.files[0];
+		var textType = /text.*/;
+
+		if (file.type.match(textType)) {
+			var reader = new FileReader();
+			reader.onload = function(e) {
+				var fields = reader.result.split(",");
+				var N = (fields.length-1)/4;
+				var X = numeric.rep([N, 4]);
+				var i = 0;
+				for (i = 0; i < N; i++) {
+					X[i][0] = parseFloat(fields[i*4]);
+					X[i][1] = parseFloat(fields[i*4+1]);
+					X[i][2] = parseFloat(fields[i*4+2]);
+					X[i][3] = parseFloat(fields[i*4+3]);
+				}
+				initGLBuffers(X);
+				var textArea = document.getElementById('varExplainedText');
+				textArea.innerHTML = fields[fields.length-1];
+			}
+			reader.readAsText(file);	
+		} else {
+			result.innerHTML = "File not supported!"
+		}
+	});
+    
+    function playAudioButton() {
+        if (!playing) {
+            //Prevent the user from accidentally playing multiple audio streams
+            playAudio();
+        }
+    }
+    
+    function playAudio() {
+        if (context === null) {
+            return;
+        }
+        playing = true;
+        console.log("Playing audio, offsetTime = " + offsetTime);
+        source = context.createBufferSource();
+        source.buffer = buffer;
+        analyser = context.createAnalyser();
+        source.connect(analyser);
+        analyser.connect(context.destination);
+
+        startTime = context.currentTime;
+
+        //setTimeout(disconnect, source.buffer.duration * 1000 +1000);
+        
+        source.start(context.currentTime, offsetTime, buffer.duration - offsetTime);
+        
+        playIdx = 0;
+        requestAnimFrame(function(){repaintWithContext(context)});
+    }
+    
+    function pauseAudio() {
+        console.log("Pausing");
+        if (source === null) {
+            return;
+        }
+        playing = false;
+        source.stop();
+        offsetTime = context.currentTime - startTime + offsetTime;
+    }
+    
+    var audioInput = document.getElementById('audioInput');
+    audioInput.addEventListener('change', function(e) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var data = e.target.result;
+            context = new (window.AudioContext || window.webkitAudioContext)();
+            
+            if(context.decodeAudioData) {
+                context.decodeAudioData(data, function(buff) {
+                buffer = buff;
+                }, function(e) {
+                    console.log(e);
+                });
+            } else {
+                buffer = context.createBuffer(data, false /*mixToMono*/);
+                playAudio();
+            }    
+        }        
+        reader.readAsArrayBuffer(audioInput.files[0]);
+    });
+    
+    var timeSlider = document.getElementById('timeSlider');
+    timeSlider.addEventListener('change', function(e) {
+        if (buffer === null) {
+            return;
+        }
+        offsetTime = buffer.duration*parseFloat(timeSlider.value)/1000.0;
+        playIdx = 0;
+        requestAnimFrame(function(){repaintWithContext(context)});
+        if (playing) {
+            source.stop();
+            playAudio();
+        }
+    });
+</script>
+
+
+</body>
+</html>
