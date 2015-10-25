@@ -1,0 +1,227 @@
+<html>
+
+<head>
+<!--External Libraries!-->
+<script type="text/javascript" src="libs/glMatrix-0.9.5.min.js"></script>
+<script type="text/javascript" src="libs/webgl-utils.js"></script>
+<script type="text/javascript" src="libs/numeric-1.2.6.min.js"></script>
+
+<!--My Scripts!-->
+<script src="CrossSimilarityGLCanvas.js"></script>
+<script src="CrossSimilarityCanvas.js"></script>
+<script src="CrossSimilarityFeatures.js"></script>
+</head>
+
+<body onload="webGLStart();">
+
+<!--<script>
+SC.initialize({
+  client_id: 'b302c6dd719d6e25ac23e4c34335272c'
+});
+
+// stream track id 293
+SC.stream("/tracks/6142099", function(sound){
+  sound.play();
+});
+
+</script>!-->
+
+<table>
+<tr><td><h3>Audio File 1</h3></td><td><input type = "file" id = "audioInput1"></td></tr>
+<tr><td><h3>Audio File 2</h3></td><td><input type = "file" id = "audioInput2"></td></tr>
+<tr><td><h3>Feature Info</h3></td><td><input type = "file" id = "featureInfoInput"></td></tr>
+<tr><td><h3>Cross-Similarity Image</h3></td><td><input type="file" id="crossSimilarityInput"></td></tr>
+</table>
+
+<h2><p id = "pagestatus"></p></h2>
+
+<table border = "1">
+<tr colspan = "2"><td>
+<canvas id="CrossSimilarityCanvas" width="800" height="600">
+</td></tr>
+
+<tr>
+
+<td>
+<canvas id="LoopDittyGLCanvas" style="border: none;" width="800" height="800"></canvas>
+</td>
+
+<td>
+<table>
+<tr><td> SSM 1 Goes Here</td></tr>
+<tr><td> SSM 2 Goes Here</td></tr>
+</table>
+</td>
+
+</tr>
+</table>
+
+<script>
+    var source = null;
+    var analyser = null;
+    var context = null;
+    var buffer1 = null;
+    var buffer2 = null;
+    var result = document.getElementById('text');
+    
+    var displayTimeEdges = true;
+    var displayScaffoldingEdges = true;
+
+    function disconnect() {
+        source.stop();
+        source.disconnect(0);
+        analyser.disconnect(0);
+    }
+    
+    ctx = document.getElementById('CrossSimilarityCanvas').getContext('2d');
+    var crossSimilarityInput = document.getElementById('crossSimilarityInput');
+	crossSimilarityInput.addEventListener('change', function(e) {
+		CSImage.src = URL.createObjectURL(e.target.files[0]);
+		CSImage.onload = function() {
+		    ctx.drawImage(CSImage, 0, 0, 800, 600);
+		    ctx.beginPath();
+		    ctx.moveTo(0, 10);
+		    ctx.lineTo(800, 10);
+		    ctx.strokeStyle = '#ff0000';
+		    ctx.stroke();
+		}
+	});
+	initCanvasHandlers();
+
+    var featureInput = document.getElementById('featureInfoInput');
+	featureInput.addEventListener('change', function(e) {
+		var file = featureInput.files[0];
+		var textType = /text.*/;
+
+		if (file.type.match(textType)) {
+			var reader = new FileReader();
+			reader.onload = function(e) {
+				var fields = reader.result.split(",");
+				var idx = 0;
+				//Header info
+				dim = parseInt(fields[idx]); idx++;
+				BeatsPerBlock = parseInt(fields[idx]); idx++;
+				songfilename1 = fields[idx]; idx++;
+				songfilename2 = fields[idx]; idx++;
+				tempobias1 = parseInt(fields[idx]); idx++;
+				tempobias2 = parseInt(fields[idx]); idx++;
+				
+				//Beats for song 1
+				var N = 0;
+				var K = 0;
+				N = parseInt(fields[idx]); idx++;
+				bts1 = numeric.rep([N, 2]);
+				for (var i = 0; i < N; i++) {
+				    bts1[i][0] = parseInt(fields[idx]); idx++;
+				    bts1[i][1] = parseFloat(fields[idx]); idx++;
+				}
+				//MFCC info for song 1
+				N = parseInt(fields[idx]); idx++;
+				K = parseInt(fields[idx]); idx++;
+				MFCCs1 = numeric.rep([N, K+1]);
+				for (var i = 0; i < N; i++) {
+				    for (var k = 0; k < K+1; k++) {
+				        MFCCs1[i][k] = parseFloat(fields[idx]); idx++;
+				    }
+				}
+				console.log("MFCC1: " + N + " x " + K);
+				
+				//Beats for song 2
+				N = parseInt(fields[idx]); idx++;
+				bts2 = numeric.rep([N, 2]);
+				for (var i = 0; i < N; i++) {
+				    bts2[i][0] = parseInt(fields[idx]); idx++;
+				    bts2[i][1] = parseFloat(fields[idx]); idx++;
+				}
+				//MFCC info for song 2
+				N = parseInt(fields[idx]); idx++;
+				K = parseInt(fields[idx]); idx++;
+				MFCCs2 = numeric.rep([N, K+1]);
+				for (var i = 0; i < N; i++) {
+				    for (var k = 0; k < K+1; k++) {
+				        MFCCs2[i][k] = parseFloat(fields[idx]); idx++;
+				    }
+				}
+				console.log("MFCC2: " + N + " x " + K);
+				
+				getBlockPCAAndSSM(MFCCs1, bts1, 0)
+			}
+			reader.readAsText(file);	
+		} else {
+			result.innerHTML = "File not supported!"
+		}
+	});
+	
+    function playAudio() {
+        if (context === null) {
+            return;
+        }
+        playing = true;
+        console.log("Playing audio, offsetTime = " + offsetTime);
+        source = context.createBufferSource();
+        if (songidx == 1) {
+            source.buffer = buffer1;
+        }
+        else {
+            source.buffer = buffer2;
+        }
+        analyser = context.createAnalyser();
+        source.connect(analyser);
+        analyser.connect(context.destination);
+
+        startTime = context.currentTime;
+
+        //setTimeout(disconnect, source.buffer.duration * 1000 +1000);
+        
+        source.start(context.currentTime, offsetTime, buffer.duration - offsetTime);
+        
+        playIdx = 0;
+        requestAnimFrame(function(){repaintWithContext(context)});
+    }
+    
+    var audioInput1 = document.getElementById('audioInput1');
+    audioInput1.addEventListener('change', function(e) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var data = e.target.result;
+            context = new (window.AudioContext || window.webkitAudioContext)();
+            
+            if(context.decodeAudioData) {
+                context.decodeAudioData(data, function(buff) {
+                buffer1 = buff;
+                }, function(e) {
+                    console.log(e);
+                });
+            } else {
+                buffer1 = context.createBuffer(data, false /*mixToMono*/);
+                playAudio();
+            }    
+        }        
+        reader.readAsArrayBuffer(audioInput1.files[0]);
+    });
+    
+    var audioInput2 = document.getElementById('audioInput2');
+    audioInput2.addEventListener('change', function(e) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var data = e.target.result;
+            context = new (window.AudioContext || window.webkitAudioContext)();
+            
+            if(context.decodeAudioData) {
+                context.decodeAudioData(data, function(buff) {
+                buffer2 = buff;
+                }, function(e) {
+                    console.log(e);
+                });
+            } else {
+                buffer2 = context.createBuffer(data, false /*mixToMono*/);
+                playAudio();
+            }    
+        }        
+        reader.readAsArrayBuffer(audioInput2.files[0]);
+    });
+</script>
+
+
+</body>
+</html>
