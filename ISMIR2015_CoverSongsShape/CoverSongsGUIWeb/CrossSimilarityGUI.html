@@ -143,8 +143,7 @@ SC.stream("/tracks/6142099", function(sound){
 				    }
 				}
 				console.log("MFCC2: " + N + " x " + K);
-				
-				getBlockPCAAndSSM(MFCCs1, bts1, 0)
+				var ret = getBlockPCAAndSSM(MFCCs1, bts1, 0);
 			}
 			reader.readAsText(file);	
 		} else {

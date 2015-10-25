@@ -5,9 +5,9 @@ var songfilename1 = "";
 var songfilename2 = "";
 var tempobias1 = 120;
 var tempobias2 = 120;
-var MFCCs1 = [ [] ];
+var MFCCs1 = [[]];
 var bts1 = [];
-var MFCCs2 = [ [] ];
+var MFCCs2 = [[]];
 var bts2 = [];
 
 function getBlockPCAAndSSM(MFCCs, bts, idx) {
@@ -42,8 +42,6 @@ function getBlockPCAAndSSM(MFCCs, bts, idx) {
 	
 	//Step 3: Scale each row so that it has unit norm
 	var rNorm = 1.0;
-	var std = numeric.rep([N], 0);
-	var str = "";
 	for (i = 0; i < N; i++) {
 	    rNorm = numeric.norm2(X[i]);
 		for (k = 0; k < K; k++) {
@@ -67,5 +65,14 @@ function getBlockPCAAndSSM(MFCCs, bts, idx) {
 	}
 	
 	//Step 6: Compute the self-similarity matrix
-	
+	var norm = numeric.rep([N], 0);
+	for (i = 0; i < N; i++) {
+	    norm[i] = numeric.norm2(X[i]);
+	    norm[i] = norm[i]*norm[i];
+	}
+	norm = numeric.rep([N], norm);
+	D = numeric.add(norm, numeric.transpose(norm));
+	D = numeric.add(D, numeric.mul(-2, numeric.dot(X, numeric.transpose(X))));
+	console.log("Finished computing PCA and SSM");
+	return [D, Y];
 }
