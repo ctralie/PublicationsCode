@@ -15,6 +15,10 @@ function releaseClickCSM(evt) {
 	offset1idx = evt.offsetY;
 	offset2 = bts2[evt.offsetX][1];
 	offset2idx = evt.offsetX;
+	playing1 = true;
+	if (evt.ctrlKey) {
+		playing1 = false;
+	}
     if (playing) {
         source.stop();
         if (playing1) {
