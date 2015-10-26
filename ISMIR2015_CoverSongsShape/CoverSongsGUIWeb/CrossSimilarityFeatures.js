@@ -10,6 +10,10 @@ var bts1 = [];
 var MFCCs2 = [[]];
 var bts2 = [];
 
+//Variables for SSM canvases
+var ssm1ctx;
+var ssm2ctx;
+
 function getBlockPCAAndSSM(MFCCs, bts, idx) {
     //Step 1: Copy over MFCC windows in this block to a temporary array
     var i1 = bts[idx][0];
@@ -75,4 +79,11 @@ function getBlockPCAAndSSM(MFCCs, bts, idx) {
 	D = numeric.add(D, numeric.mul(-2, numeric.dot(X, numeric.transpose(X))));
 	console.log("Finished computing PCA and SSM");
 	return [D, Y];
+}
+
+function makeSSMImage(ctx, D, cmap) {
+	var H = D.length;
+	var W = D[0].length;
+	var im = ctx.createImageData(W, H);
+	//TODO: Finish this
 }

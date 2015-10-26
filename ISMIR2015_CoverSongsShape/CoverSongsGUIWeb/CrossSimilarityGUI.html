@@ -37,6 +37,14 @@ SC.stream("/tracks/6142099", function(sound){
 
 <table border = "1">
 <tr colspan = "2"><td>
+<table>
+<tr>
+<td><button type = "button" onclick = "playAudioButton()">Play</button></td>
+<td><button type = "button" onclick = "pauseAudio()">Pause</button></td>
+</tr>
+</table>
+</td></tr>
+<tr colspan = "2"><td>
 <canvas id="CrossSimilarityCanvas" width="800" height="600">
 </td></tr>
 
@@ -48,8 +56,8 @@ SC.stream("/tracks/6142099", function(sound){
 
 <td>
 <table>
-<tr><td> SSM 1 Goes Here</td></tr>
-<tr><td> SSM 2 Goes Here</td></tr>
+<tr><td><canvas id="SSM1Canvas" width="400" height="400"></td></tr>
+<tr><td><canvas id="SSM2Canvas" width="400" height="400"></td></tr>
 </table>
 </td>
 
@@ -72,18 +80,15 @@ SC.stream("/tracks/6142099", function(sound){
         source.disconnect(0);
         analyser.disconnect(0);
     }
+    ssm1ctx = document.getElementById('SSM1Canvas').getContext('2d');
+    ssm2ctx = document.getElementById('SSM2Canvas').getContext('2d');
     
-    ctx = document.getElementById('CrossSimilarityCanvas').getContext('2d');
+    csmctx = document.getElementById('CrossSimilarityCanvas').getContext('2d');
     var crossSimilarityInput = document.getElementById('crossSimilarityInput');
 	crossSimilarityInput.addEventListener('change', function(e) {
 		CSImage.src = URL.createObjectURL(e.target.files[0]);
 		CSImage.onload = function() {
-		    ctx.drawImage(CSImage, 0, 0, 800, 600);
-		    ctx.beginPath();
-		    ctx.moveTo(0, 10);
-		    ctx.lineTo(800, 10);
-		    ctx.strokeStyle = '#ff0000';
-		    ctx.stroke();
+		    redrawCSMCanvas();
 		}
 	});
 	initCanvasHandlers();
@@ -107,6 +112,7 @@ SC.stream("/tracks/6142099", function(sound){
 				tempobias2 = parseInt(fields[idx]); idx++;
 				
 				//Beats for song 1
+				console.log("Loading song 1 info...");
 				var N = 0;
 				var K = 0;
 				N = parseInt(fields[idx]); idx++;
@@ -127,6 +133,7 @@ SC.stream("/tracks/6142099", function(sound){
 				console.log("MFCC1: " + N + " x " + K);
 				
 				//Beats for song 2
+				console.log("Loading song 2 info...");
 				N = parseInt(fields[idx]); idx++;
 				bts2 = numeric.rep([N, 2]);
 				for (var i = 0; i < N; i++) {
@@ -143,7 +150,8 @@ SC.stream("/tracks/6142099", function(sound){
 				    }
 				}
 				console.log("MFCC2: " + N + " x " + K);
-				var ret = getBlockPCAAndSSM(MFCCs1, bts1, 0);
+				//var ret = getBlockPCAAndSSM(MFCCs1, bts1, 0);
+				console.log("Finished loading info");
 			}
 			reader.readAsText(file);	
 		} else {
@@ -151,7 +159,24 @@ SC.stream("/tracks/6142099", function(sound){
 		}
 	});
 	
-    function playAudio() {
+	
+    function playAudioButton() {
+        if (!playing) {
+            //Prevent the user from accidentally playing multiple audio streams
+            playAudio(1);
+        }
+    }
+    
+    function pauseAudio() {
+        console.log("Pausing");
+        if (source === null) {
+            return;
+        }
+        playing = false;
+        source.stop();
+    }
+    
+    function playAudio(songidx) {
         if (context === null) {
             return;
         }
@@ -160,9 +185,13 @@ SC.stream("/tracks/6142099", function(sound){
         source = context.createBufferSource();
         if (songidx == 1) {
             source.buffer = buffer1;
+            playing1 = true;
+            offsetTime = offset1;
         }
         else {
             source.buffer = buffer2;
+            playing2 = true;
+            offsetTime = offset2;
         }
         analyser = context.createAnalyser();
         source.connect(analyser);
@@ -172,10 +201,12 @@ SC.stream("/tracks/6142099", function(sound){
 
         //setTimeout(disconnect, source.buffer.duration * 1000 +1000);
         
-        source.start(context.currentTime, offsetTime, buffer.duration - offsetTime);
+        source.start(context.currentTime, offsetTime, source.buffer.duration - offsetTime);
         
         playIdx = 0;
-        requestAnimFrame(function(){repaintWithContext(context)});
+        playIdxCSM = 0;
+        //requestAnimFrame(function(){repaintWithContext(context)});
+        requestAnimFrame(updateCSMCanvas);
     }
     
     var audioInput1 = document.getElementById('audioInput1');
@@ -193,7 +224,7 @@ SC.stream("/tracks/6142099", function(sound){
                 });
             } else {
                 buffer1 = context.createBuffer(data, false /*mixToMono*/);
-                playAudio();
+                playAudio(1);
             }    
         }        
         reader.readAsArrayBuffer(audioInput1.files[0]);
@@ -214,7 +245,7 @@ SC.stream("/tracks/6142099", function(sound){
                 });
             } else {
                 buffer2 = context.createBuffer(data, false /*mixToMono*/);
-                playAudio();
+                playAudio(2);
             }    
         }        
         reader.readAsArrayBuffer(audioInput2.files[0]);
