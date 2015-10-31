@@ -10,14 +10,23 @@ var playIdxCSM = 0;
 //Functions to handle mouse motion
 function releaseClickCSM(evt) {
 	evt.preventDefault();
-	console.log("X = " + evt.offsetX + ", Y = " + evt.offsetY);
 	offset1 = bts1[evt.offsetY][1];
 	offset1idx = evt.offsetY;
 	offset2 = bts2[evt.offsetX][1];
 	offset2idx = evt.offsetX;
 	playing1 = true;
+	if (evt.button === 1) {
+		//Compute self-similarity matrices
+		var ret = getBlockPCAAndSSM(MFCCs1, bts1, offset1idx);
+		makeSSMImage(ssm1ctx, ret, COLORMAP_JET);
+		ret = getBlockPCAAndSSM(MFCCs2, bts2, offset2idx);
+		makeSSMImage(ssm2ctx, ret, COLORMAP_JET);
+		playing = false;
+		source.stop();
+		return;
+	}
 	if (evt.ctrlKey) {
-		playing1 = false;
+		playing1 = false;	
 	}
     if (playing) {
         source.stop();
@@ -53,6 +62,8 @@ function initCanvasHandlers() {
     canvas.addEventListener('touchstart', makeClickCSM);
     canvas.addEventListener('touchend', releaseClickCSM);
     canvas.addEventListener('touchmove', clickerDraggedCSM);
+    
+    canvas.addEventListener('contextmenu', function dummy(e) { return false });
 }
 
 function redrawCSMCanvas() {

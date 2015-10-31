@@ -53,7 +53,7 @@ function getBlockPCAAndSSM(MFCCs, bts, idx) {
 		}
 	}	
 	
-	//Step 4: Do PCA
+/*	//Step 4: Do PCA
 	B = numeric.dot(numeric.transpose(X), X);
 	E = numeric.eig(B).E.x;
 	X = numeric.dot(X, E);
@@ -66,7 +66,7 @@ function getBlockPCAAndSSM(MFCCs, bts, idx) {
 			Y[i][k] = X[i][k];
 		}
 		Y[i][3] = MFCCs[i1+i];
-	}
+	}*/
 	
 	//Step 6: Compute the self-similarity matrix
 	var norm = numeric.rep([N], 0);
@@ -77,13 +77,36 @@ function getBlockPCAAndSSM(MFCCs, bts, idx) {
 	norm = numeric.rep([N], norm);
 	D = numeric.add(norm, numeric.transpose(norm));
 	D = numeric.add(D, numeric.mul(-2, numeric.dot(X, numeric.transpose(X))));
-	console.log("Finished computing PCA and SSM");
-	return [D, Y];
+	console.log("Finished computing " + D.length + " x " + D[0].length + " SSM");
+	return D
 }
 
 function makeSSMImage(ctx, D, cmap) {
+	console.log("Making SSM image...");
 	var H = D.length;
 	var W = D[0].length;
 	var im = ctx.createImageData(W, H);
-	//TODO: Finish this
+	var L = cmap.length/3;
+	
+	var minV = 0.0;
+	var maxV = 4.0;
+	//Apply interpolated colormap
+	var idx = 0;
+	//var ci = numeric.round(numeric.mul((L/maxV), numeric.add(-minV, D)));
+	var ci = numeric.round(numeric.mul((255/maxV), numeric.add(-minV, D)));
+	for (i = 0; i < H; i++) {
+		for (j = 0; j < W; j++) {
+			//Linear interpolation for colormap
+			im.data[idx] = 255*cmap[ci[i][j]*3]; idx++;//Red
+			im.data[idx] = 255*cmap[ci[i][j]*3+1]; idx++;//Green
+			im.data[idx] = 255*cmap[ci[i][j]*3+2]; idx++//Blue
+			im.data[idx] = 255; idx++;//Alpha
+//			im.data[idx] = ci[i][j]; idx++;//Red
+//			im.data[idx] = ci[i][j]; idx++;//Green
+//			im.data[idx] = ci[i][j]; idx++//Blue
+//			im.data[idx] = 255; idx++;//Alpha
+		}
+	}
+	ctx.putImageData(im, 0, 0, 0, 0, 400, 400);
+	console.log("Finished making SSM image");
 }

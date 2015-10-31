@@ -7,8 +7,6 @@ var LOADING_CURVE = [[0,0,0,1],[0.346052,0.123809,0,2],[0.771862,0.53719,0,3],[0
 
 var COLORMAP_JET = [0, 0, 0.5625, 0, 0, 0.625, 0, 0, 0.6875, 0, 0, 0.75, 0, 0, 0.8125, 0, 0, 0.875, 0, 0, 0.9375, 0, 0, 1, 0, 0.0625, 1, 0, 0.125, 1, 0, 0.1875, 1, 0, 0.25, 1, 0, 0.3125, 1, 0, 0.375, 1, 0, 0.4375, 1, 0, 0.5, 1, 0, 0.5625, 1, 0, 0.625, 1, 0, 0.6875, 1, 0, 0.75, 1, 0, 0.8125, 1, 0, 0.875, 1, 0, 0.9375, 1, 0, 1, 1, 0.0625, 1, 0.9375, 0.125, 1, 0.875, 0.1875, 1, 0.8125, 0.25, 1, 0.75, 0.3125, 1, 0.6875, 0.375, 1, 0.625, 0.4375, 1, 0.5625, 0.5, 1, 0.5, 0.5625, 1, 0.4375, 0.625, 1, 0.375, 0.6875, 1, 0.3125, 0.75, 1, 0.25, 0.8125, 1, 0.1875, 0.875, 1, 0.125, 0.9375, 1, 0.0625, 1, 1, 0, 1, 0.9375, 0, 1, 0.875, 0, 1, 0.8125, 0, 1, 0.75, 0, 1, 0.6875, 0, 1, 0.625, 0, 1, 0.5625, 0, 1, 0.5, 0, 1, 0.4375, 0, 1, 0.375, 0, 1, 0.3125, 0, 1, 0.25, 0, 1, 0.1875, 0, 1, 0.125, 0, 1, 0.0625, 0, 1, 0, 0, 0.9375, 0, 0, 0.875, 0, 0, 0.8125, 0, 0, 0.75, 0, 0, 0.6875, 0, 0, 0.625, 0, 0, 0.5625, 0, 0, 0.5, 0, 0];
 
-var DelaySeries = [ [] ];
-
 //Playing information
 var playIdx = 0;
 var playTime = 0;
@@ -169,27 +167,33 @@ function clickerDragged(evt) {
 
 
 //Variables for polar camera
-var theta = -Math.PI/2;
-var phi = Math.PI/2;
-var camCenter = [0.0, 0.0, 0.0];
-var camR = 5.0;
+var camera1 = Object();
+camera1.camCenter = [0.0, 0.0, 0.0];
+camera1.camR = 5.0;
+camera1.theta = -Math.PI/2;
+camera1.phi = Math.PI/2;
 
-var songVertexVBO;
-var songColorVBO;
-var times = [];
+var camera2 = Object();
+camera2.camCenter = [0.0, 0.0, 0.0];
+camera2.camR = 5.0;
+camera2.theta = -Math.PI/2;
+camera2.pi = Math.PI/2;
 
-var pointsVBO = -1;
-var colorsVBO = -1;
-//Use the information in the Nx4 matrix X to initialize the vertex/color buffers
-function initGLBuffers(X) {
+//Vertex/color buffer objects
+var points1VBO = -1;
+var colors1VBO = -1;
+var points2VBO = -1;
+var points2VBO = -1;
+
+//Initialize color and vertex buffers for one of the curves
+function initGLBuffers(X, bts, idx, pointsVBO, colorsVBO, camera) {
 	console.log("Initializing buffers...");
-    var N = X.length;
+	var i1 = bts[idx][0];
+	var i2 = bts[idx+BeatsPerBlock][0]
+    var N = (i2-i1)+1;
     if (N <= 0) {
     	return;
     }
-    DelaySeries = X;
-    playIdx = N-1;
-    playTime = X[X.length-1][3];
     var i = 0;
     var ci = 0;
     var li = 0;
@@ -197,14 +201,12 @@ function initGLBuffers(X) {
     
     var vertices = [];
     var colors = [];
-    times = [];
     
     for (i = 0; i < N; i++) {
     	for (k = 0; k < 3; k++) {
-    		vertices.push(X[i][k]);
+    		vertices.push(X[i+i1][k]);
     	}
-    	times.push(X[i][3]);
-    	ci = 63.0*(0.1+X[i][3])/(0.1+X[N-1][3]);
+    	ci = 63.0*(0.1+i)/(0.1+N);
     	li = numeric.floor([ci])[0];
     	ri = numeric.ceil([ci])[0];
     	ri = numeric.min([ri], [63])[0];
@@ -215,17 +217,11 @@ function initGLBuffers(X) {
     	colors.push(1);//Alpha
     }
     
-    if (pointsVBO == -1) {
-    	pointsVBO = gl.createBuffer();
-    }
     gl.bindBuffer(gl.ARRAY_BUFFER, pointsVBO);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
     pointsVBO.itemSize = 3;
     pointsVBO.numItems = N;
 
-	if (colorsVBO == -1) {
-    	colorsVBO = gl.createBuffer();
-    }
     gl.bindBuffer(gl.ARRAY_BUFFER, colorsVBO);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
     colorsVBO.itemSize = 4;
@@ -259,32 +255,28 @@ function initGLBuffers(X) {
     var dX = bbox[1] - bbox[0];
     var dY = bbox[3] - bbox[2];
     var dZ = bbox[5] - bbox[4];
-    camR = Math.sqrt(dX*dX + dY*dY + dZ*dZ);
-    camCenter = [bbox[0] + 0.5*dX, bbox[2] + 0.5*dY, bbox[4] + 0.5*dZ];
+    camera.camR = Math.sqrt(dX*dX + dY*dY + dZ*dZ);
+    camera.camCenter = [bbox[0] + 0.5*dX, bbox[2] + 0.5*dY, bbox[4] + 0.5*dZ];
     console.log("Finished centering camera");
     
     requestAnimFrame(repaint);   
 }
 
-
-function drawScene() {
-    gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-	
-    mat4.perspective(45, 1.5, camR/100.0, camR*2, pMatrix);
-
+function drawCurve(camera, pointsVBO, colorsVBO, MFCCs, drawFull) {
     //mat4.identity(mvMatrix);
-    var sinT = numeric.sin([theta])[0];
-    var cosT = numeric.cos([theta])[0];
-    var sinP = numeric.sin([phi])[0];
-    var cosP = numeric.cos([phi])[0];
+    mat4.perspective(45, 1.5, camera.camR/100.0, camera.camR*2, pMatrix);
+    
+    var sinT = numeric.sin([camera.theta])[0];
+    var cosT = numeric.cos([camera.theta])[0];
+    var sinP = numeric.sin([camera.phi])[0];
+    var cosP = numeric.cos([camera.phi])[0];
     var T = [-sinP*cosT, -cosP, sinP*sinT];
     var U = [-cosP*cosT, sinP, cosP*sinT];
     var R = [-sinT, 0, -cosT];
-    var eye = [camCenter[0] - camR*T[0], camCenter[1] - camR*T[1], camCenter[2] - camR*T[2]];
+    var eye = [camera.camCenter[0] - camera.camR*T[0], camera.camCenter[1] - camera.camR*T[1], camera.camCenter[2] - camera.camR*T[2]];
 	rotMat = [[R[0], U[0], -T[0], 0], [R[1], U[1], -T[1], 0], [R[2], U[2], -T[2], 0], [0, 0, 0, 1]];
 	rotMat = numeric.transpose(rotMat);
-	transMat = [[1, 0, 0, -eye[0]], [0, 1, 0, -eye[1]], [0, 0, 1, -eye[2]], [0, 0, 0, 1]];
+	transMat = [[1, 0, 0, -camera.eye[0]], [0, 1, 0, -camera.eye[1]], [0, 0, 1, -camera.eye[2]], [0, 0, 0, 1]];
 	var mvMatrix4x4 = numeric.dot(rotMat, transMat);
 	mvMatrix = [];
 	var i = 0;
@@ -297,9 +289,10 @@ function drawScene() {
 
 	if (pointsVBO != -1 && colorsVBO != -1) {
 		//Find playing index with a linear search
-		//TODO: Improve this to binary search
-		while (DelaySeries[playIdx][3] < playTime && playIdx < DelaySeries.length - 1) {
-			playIdx++;
+		if (!playFull) {
+			while (MFCCs[playIdx][0] < playTime && playIdx < MFCCs.length - 1) {
+				playIdx++;
+			}
 		}
 		gl.bindBuffer(gl.ARRAY_BUFFER, pointsVBO);
 		gl.vertexAttribPointer(shaderProgram.vPosAttrib, pointsVBO.itemSize, gl.FLOAT, false, 0, 0);
@@ -315,6 +308,14 @@ function drawScene() {
     }
 }
 
+function drawScene() {
+    gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+	
+	drawCurve(camera1, points1VBO, colors1VBO, MFCCs1, playing1);
+	drawCurve(camera2, points2VBO, colors2VBO, MFCCs2, !playing1);
+}
+
 
 function repaint() {
     drawScene();
@@ -327,11 +328,6 @@ function repaintWithContext(context) {
         timeSlider.value = "" + parseInt(""+Math.round(playTime*1000.0/buffer.duration));
         drawScene();
         requestAnimFrame(function(){repaintWithContext(context)});
-    }
-    else {
-        //If paused allow scrolling around
-        playTime = offsetTime;
-        drawScene();
     }
 }
 
@@ -348,7 +344,11 @@ function webGLStart() {
     
     initGL(glcanvas);
     initShaders();
-    initGLBuffers(LOOP_DITTY_CURVE);
+    points1VBO = gl.createBuffer();
+    points2VBO = gl.createBuffer();
+    colors1VBO = gl.createBuffer();
+    colors2VBO = gl.createBuffer();
+    //initGLBuffers(LOOP_DITTY_CURVE);
 
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.enable(gl.DEPTH_TEST);

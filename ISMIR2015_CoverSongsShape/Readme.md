@@ -10,7 +10,7 @@ Society for Music Information Retrieval (ISMIR) Conference,</i> 2015.
 
 <h3><a href = "https://www.youtube.com/watch?v=GrWIrR1dLak">Click here</a> to see a narrated Youtube video which explains this paper at a high level</h3>
 
-Most of the code is written in Matlab to take advantage of fast matrix multiplication routines and existing libraries for music feature extraction, but a few files (sequence alignment) are written in C++, and the GUI is written in Python.
+Most of the code is written in Matlab to take advantage of fast matrix multiplication routines and existing libraries for music feature extraction, but a few files (sequence alignment) are written in C++, and the GUI is written in Python.  There is also a GUI written in Javascript/WebGL
 
 #Getting Started and Running Experiments
 Below is a list of instructions to replicate the results reported in the paper
@@ -51,7 +51,9 @@ Below is a description of the code in each directory in this repository
 
 * BlurredLinesExperiment: Some code for running the experiment that compares Robin Thicke's "Blurred Lines" to Marvin Gaye's "Got To Give It Up"
 
-* CoverSongsGUI: Code for interactively viewing cross-similarity matrices
+* CoverSongsGUI: Code for interactively viewing cross-similarity matrices and the self-similarity matrices that were used to generate each pixel on the cross-similarity matrix, as well as PCA on blocks down to 3D synchronized with the music in OpenGL
+
+* CoverSongsGUIWeb: A subset of the Python GUI which is easily deployable in the browser (it is best to start here if you want to visually explore features)
 
 * EMD: Code for doing L1 Earth mover's distance between self-similarity matrices (results not reported in paper)
 

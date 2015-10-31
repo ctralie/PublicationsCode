@@ -12,7 +12,7 @@
 <script src="CrossSimilarityFeatures.js"></script>
 </head>
 
-<body onload="webGLStart();">
+<!--<body onload="webGLStart();">-->
 
 <!--<script>
 SC.initialize({
@@ -36,7 +36,7 @@ SC.stream("/tracks/6142099", function(sound){
 <h2><p id = "pagestatus"></p></h2>
 
 <table border = "1">
-<tr colspan = "2"><td>
+<tr><td colspan = "2">
 <table>
 <tr>
 <td><button type = "button" onclick = "playAudioButton()">Play</button></td>
@@ -44,22 +44,22 @@ SC.stream("/tracks/6142099", function(sound){
 </tr>
 </table>
 </td></tr>
-<tr colspan = "2"><td>
+<tr><td colspan = "2">
 <canvas id="CrossSimilarityCanvas" width="800" height="600">
 </td></tr>
 
 <tr>
+<td><h2>SSM 1</h2></td><td><h2>SSM 2</h2></td>
+</tr>
 
-<td>
-<canvas id="LoopDittyGLCanvas" style="border: none;" width="800" height="800"></canvas>
-</td>
+<tr>
 
-<td>
-<table>
-<tr><td><canvas id="SSM1Canvas" width="400" height="400"></td></tr>
-<tr><td><canvas id="SSM2Canvas" width="400" height="400"></td></tr>
-</table>
-</td>
+<!--<td>-->
+<!--<canvas id="LoopDittyGLCanvas" style="border: none;" width="800" height="800"></canvas>-->
+<!--</td>-->
+
+<td><canvas id="SSM1Canvas" width="400" height="400"></td>
+<td><canvas id="SSM2Canvas" width="400" height="400"></td>
 
 </tr>
 </table>
@@ -150,7 +150,6 @@ SC.stream("/tracks/6142099", function(sound){
 				    }
 				}
 				console.log("MFCC2: " + N + " x " + K);
-				//var ret = getBlockPCAAndSSM(MFCCs1, bts1, 0);
 				console.log("Finished loading info");
 			}
 			reader.readAsText(file);	
@@ -190,7 +189,7 @@ SC.stream("/tracks/6142099", function(sound){
         }
         else {
             source.buffer = buffer2;
-            playing2 = true;
+            playing1 = false;
             offsetTime = offset2;
         }
         analyser = context.createAnalyser();
