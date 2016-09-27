@@ -65,3 +65,16 @@ Below is a description of the code in each directory in this repository
 
 * SimilarityMatrices: Code for computing self-similarity matrices for the blocks 
 
+#Running Individual Pairs outside Covers80
+If you want to compare two songs outside of the covers80 framework, use the file "compareTwoSongs.m."  For instance,
+
+~~~~~ matlab
+filename1 = 'song1.mp3';
+filename2 = 'song2.mp3';
+dim = 50; %Resized dimension of self-similarity matrices
+BeatsPerBlock = 12; %Number of beats per block
+Kappa = 0.1; %Fraction of mutual nearest neighbors to take when converting a cross-similarity matrix to a binary cross-similarity matrix
+
+
+[Score, CSM] = compareTwoSongs(filename1, filename2, dim, BeatsPerBlock, Kappa);
+~~~~~
