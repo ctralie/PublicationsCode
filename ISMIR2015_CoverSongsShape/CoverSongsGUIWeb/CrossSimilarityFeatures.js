@@ -81,6 +81,7 @@ function getBlockPCAAndSSM(MFCCs, bts, idx) {
 	return D
 }
 
+//TODO: http://stackoverflow.com/questions/24429830/html5-canvas-how-to-change-putimagedata-scale
 function makeSSMImage(ctx, D, cmap) {
 	console.log("Making SSM image...");
 	var H = D.length;
@@ -89,7 +90,7 @@ function makeSSMImage(ctx, D, cmap) {
 	var L = cmap.length/3;
 	
 	var minV = 0.0;
-	var maxV = 4.0;
+	var maxV = 10.0;
 	//Apply interpolated colormap
 	var idx = 0;
 	//var ci = numeric.round(numeric.mul((L/maxV), numeric.add(-minV, D)));

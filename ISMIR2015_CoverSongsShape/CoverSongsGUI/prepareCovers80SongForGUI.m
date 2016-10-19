@@ -10,15 +10,15 @@ function [Ds1, Ds2, CSM] = prepareCovers80SongForGUI( filenameout, filePrefix1, 
     
     %Precompute cross-similarity matrix because this step is slow and is
     %better optimized in Matlab than within Python where the GUI is
-    SampleDelays1 = song1.allSampleDelaysMFCC{beatIdx1};
+    SampleDelays1 = song1.SampleDelaysMFCC;
     bts1 = song1.allbts{beatIdx1};
-    MFCCs1 = song1.allMFCC{beatIdx1};
+    MFCCs1 = song1.MFCC;
     fprintf(1, 'Computing self-similarity matrices for %s...\n', filePrefix1);
     [Ds1, beatIdx1] = getBeatSyncDistanceMatrices(MFCCs1, SampleDelays1, bts1, dim, BeatsPerWin);
     
-    SampleDelays2 = song2.allSampleDelaysMFCC{beatIdx2};
+    SampleDelays2 = song2.SampleDelaysMFCC;
     bts2 = song2.allbts{beatIdx2};
-    MFCCs2 = song2.allMFCC{beatIdx2};
+    MFCCs2 = song2.MFCC;
     fprintf(1, 'Computing self-similarity matrices for %s...\n', filePrefix2);
     [Ds2, beatIdx2] = getBeatSyncDistanceMatrices(MFCCs2, SampleDelays2, bts2, dim, BeatsPerWin);
     
